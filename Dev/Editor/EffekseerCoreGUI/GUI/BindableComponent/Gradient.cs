@@ -21,9 +21,11 @@ namespace Effekseer.GUI.BindableComponent
 		string id_color_value = "";
 		string id_color_intensity = "";
 		string id_color_delete = "";
+		string id_color_table = "";
 		string id_alpha_position = "";
 		string id_alpha_value = "";
 		string id_alpha_delete = "";
+		string id_alpha_table = "";
 		string id_reset = "";
 
 		bool isPopupShown = false;
@@ -61,9 +63,11 @@ namespace Effekseer.GUI.BindableComponent
 			id_color_value = "###" + Manager.GetUniqueID().ToString();
 			id_color_intensity = "###" + Manager.GetUniqueID().ToString();
 			id_color_delete = "###" + Manager.GetUniqueID().ToString();
+			id_color_table = "###" + Manager.GetUniqueID().ToString();
 			id_alpha_position = "###" + Manager.GetUniqueID().ToString();
 			id_alpha_value = "###" + Manager.GetUniqueID().ToString();
 			id_alpha_delete = "###" + Manager.GetUniqueID().ToString();
+			id_alpha_table = "###" + Manager.GetUniqueID().ToString();
 			id_reset =  "###" + Manager.GetUniqueID().ToString();
 
 			copyAndPaste = new CopyAndPaste("Gradient", 
@@ -167,48 +171,54 @@ namespace Effekseer.GUI.BindableComponent
 					// Alpha Edit GUI
 					Manager.NativeManager.BeginDisabled(!alphaMarkerSelected);
 
-					Manager.NativeManager.Columns(2);
-					Manager.NativeManager.SetColumnWidth(0, contentSize.X * 0.3f);
-
-					Manager.NativeManager.Text("Position");
-					Manager.NativeManager.NextColumn();
-
-					float pos = alphaMarkerSelected ? internalState.GetAlphaMarkerPosition(selectedIndex) : 0.0f;
-					var posArray = new float[1] { pos * 100.0f };
-
-					Manager.NativeManager.SetNextItemWidth(contentSize.X * 0.7f - buttonWidth - itemSpacing.X);
-					if (Manager.NativeManager.DragFloat(id_alpha_position, posArray, 1.0f, 0.0f, 100.0f, "%.2f %%"))
+					if (Manager.NativeManager.BeginTable(id_alpha_table, 2, swig.TableFlags.BordersInnerV | swig.TableFlags.SizingStretchProp | swig.TableFlags.NoSavedSettings))
 					{
-						pos = posArray[0] / 100.0f;
-						internalState.SetAlphaMarkerPosition(selectedIndex, pos);
-					}
+						Manager.NativeManager.TableSetupColumn("Label", swig.TableColumnFlags.NoResize | swig.TableColumnFlags.WidthFixed, contentSize.X * 0.3f);
+						Manager.NativeManager.TableSetupColumn("Parameter");
+						Manager.NativeManager.TableNextRow();
+						Manager.NativeManager.TableNextColumn();
 
-					Manager.NativeManager.SameLine();
-					if (Manager.NativeManager.Button("Delete" + id_alpha_delete, buttonWidth))
-					{
-						if (internalState.RemoveAlphaMarker(selectedIndex))
+						Manager.NativeManager.Text("Position");
+						Manager.NativeManager.TableNextColumn();
+
+						float pos = alphaMarkerSelected ? internalState.GetAlphaMarkerPosition(selectedIndex) : 0.0f;
+						var posArray = new float[1] { pos * 100.0f };
+
+						Manager.NativeManager.SetNextItemWidth(contentSize.X * 0.7f - buttonWidth - itemSpacing.X);
+						if (Manager.NativeManager.DragFloat(id_alpha_position, posArray, 1.0f, 0.0f, 100.0f, "%.2f %%"))
 						{
+							pos = posArray[0] / 100.0f;
+							internalState.SetAlphaMarkerPosition(selectedIndex, pos);
 							StoreValue();
 						}
+
+						Manager.NativeManager.SameLine();
+						if (Manager.NativeManager.Button("Delete" + id_alpha_delete, buttonWidth))
+						{
+							if (internalState.RemoveAlphaMarker(selectedIndex))
+							{
+								StoreValue();
+							}
+						}
+						Manager.NativeManager.TableNextRow();
+						Manager.NativeManager.TableNextColumn();
+
+						Manager.NativeManager.Text("Alpha");
+						Manager.NativeManager.TableNextColumn();
+
+						var alpha = alphaMarkerSelected ? internalState.GetAlphaMarkerAlpha(selectedIndex) : 0.0f;
+						var alphaArray = new float[1] { alpha };
+
+						Manager.NativeManager.SetNextItemWidth(-1);
+						if (Manager.NativeManager.DragFloat(id_alpha_value, alphaArray, 0.01f, 0.0f, 1.0f))
+						{
+							alpha = alphaArray[0];
+							internalState.SetAlphaMarkerAlpha(selectedIndex, alpha);
+							StoreValue();
+						}
+
+						Manager.NativeManager.EndTable();
 					}
-					Manager.NativeManager.NextColumn();
-
-					Manager.NativeManager.Text("Alpha");
-					Manager.NativeManager.NextColumn();
-
-					var alpha = alphaMarkerSelected ? internalState.GetAlphaMarkerAlpha(selectedIndex) : 0.0f;
-					var alphaArray = new float[1] { alpha };
-
-					Manager.NativeManager.SetNextItemWidth(-1);
-					if (Manager.NativeManager.DragFloat(id_alpha_value, alphaArray, 0.01f, 0.0f, 1.0f))
-					{
-						alpha = alphaArray[0];
-						internalState.SetAlphaMarkerAlpha(selectedIndex, alpha);
-						StoreValue();
-					}
-					Manager.NativeManager.NextColumn();
-
-					Manager.NativeManager.Columns(1);
 					Manager.NativeManager.EndDisabled();
 				}
 
@@ -221,65 +231,72 @@ namespace Effekseer.GUI.BindableComponent
 					// Color Edit GUI
 					Manager.NativeManager.BeginDisabled(!colorMarkerSelected);
 
-					Manager.NativeManager.Columns(2);
-					Manager.NativeManager.SetColumnWidth(0, contentSize.X * 0.3f);
-
-					Manager.NativeManager.Text("Position");
-					Manager.NativeManager.NextColumn();
-
-					float pos = colorMarkerSelected ? internalState.GetColorMarkerPosition(selectedIndex) : 0.0f;
-					var posArray = new float[1] { pos * 100.0f };
-
-					Manager.NativeManager.SetNextItemWidth(contentSize.X * 0.7f - buttonWidth - itemSpacing.X);
-					if (Manager.NativeManager.DragFloat(id_color_position, posArray, 1.0f, 0.0f, 100.0f, "%.2f %%"))
+					if (Manager.NativeManager.BeginTable(id_color_table, 2, swig.TableFlags.BordersInnerV | swig.TableFlags.SizingStretchProp | swig.TableFlags.NoSavedSettings))
 					{
-						pos = posArray[0] / 100.0f;
-						internalState.SetColorMarkerPosition(selectedIndex, pos);
-					}
+						Manager.NativeManager.TableSetupColumn("Label", swig.TableColumnFlags.NoResize | swig.TableColumnFlags.WidthFixed, contentSize.X * 0.3f);
+						Manager.NativeManager.TableSetupColumn("Parameter");
+						Manager.NativeManager.TableNextRow();
+						Manager.NativeManager.TableNextColumn();
 
-					Manager.NativeManager.SameLine();
-					if (Manager.NativeManager.Button("Delete" + id_color_delete, buttonWidth))
-					{
-						if (internalState.RemoveColorMarker(selectedIndex))
+						Manager.NativeManager.Text("Position");
+						Manager.NativeManager.TableNextColumn();
+
+						float pos = colorMarkerSelected ? internalState.GetColorMarkerPosition(selectedIndex) : 0.0f;
+						var posArray = new float[1] { pos * 100.0f };
+
+						Manager.NativeManager.SetNextItemWidth(contentSize.X * 0.7f - buttonWidth - itemSpacing.X);
+						if (Manager.NativeManager.DragFloat(id_color_position, posArray, 1.0f, 0.0f, 100.0f, "%.2f %%"))
 						{
+							pos = posArray[0] / 100.0f;
+							internalState.SetColorMarkerPosition(selectedIndex, pos);
 							StoreValue();
 						}
+
+						Manager.NativeManager.SameLine();
+						if (Manager.NativeManager.Button("Delete" + id_color_delete, buttonWidth))
+						{
+							if (internalState.RemoveColorMarker(selectedIndex))
+							{
+								StoreValue();
+							}
+						}
+						Manager.NativeManager.TableNextRow();
+						Manager.NativeManager.TableNextColumn();
+
+						Manager.NativeManager.Text("Color");
+						Manager.NativeManager.TableNextColumn();
+
+						var color = colorMarkerSelected ? internalState.GetColorMarkerColor(selectedIndex) : new swig.ColorF(0.0f, 0.0f, 0.0f, 0.0f);
+						var colorArray = new float[] { color.R, color.G, color.B, 1.0f };
+
+						Manager.NativeManager.SetNextItemWidth(-1);
+						if (Manager.NativeManager.ColorEdit4(id_color_value, colorArray, swig.ColorEditFlags.NoAlpha))
+						{
+							color.R = colorArray[0];
+							color.G = colorArray[1];
+							color.B = colorArray[2];
+							internalState.SetColorMarkerColor(selectedIndex, color);
+							StoreValue();
+						}
+						Manager.NativeManager.TableNextRow();
+						Manager.NativeManager.TableNextColumn();
+
+						Manager.NativeManager.Text("Intensity");
+						Manager.NativeManager.TableNextColumn();
+
+						var intensity = colorMarkerSelected ? internalState.GetColorMarkerIntensity(selectedIndex) : 0.0f;
+						var intensityArray = new float[1] { intensity };
+
+						Manager.NativeManager.SetNextItemWidth(-1);
+						if (Manager.NativeManager.DragFloat(id_color_intensity, intensityArray, 0.01f, 0.0f, float.MaxValue))
+						{
+							intensity = intensityArray[0];
+							internalState.SetColorMarkerIntensity(selectedIndex, intensity);
+							StoreValue();
+						}
+
+						Manager.NativeManager.EndTable();
 					}
-					Manager.NativeManager.NextColumn();
-
-					Manager.NativeManager.Text("Color");
-					Manager.NativeManager.NextColumn();
-
-					var color = colorMarkerSelected ? internalState.GetColorMarkerColor(selectedIndex) : new swig.ColorF(0.0f, 0.0f, 0.0f, 0.0f);
-					var colorArray = new float[] { color.R, color.G, color.B, 1.0f };
-
-					Manager.NativeManager.SetNextItemWidth(-1);
-					if (Manager.NativeManager.ColorEdit4(id_color_value, colorArray, swig.ColorEditFlags.NoAlpha))
-					{
-						color.R = colorArray[0];
-						color.G = colorArray[1];
-						color.B = colorArray[2];
-						internalState.SetColorMarkerColor(selectedIndex, color);
-						StoreValue();
-					}
-					Manager.NativeManager.NextColumn();
-
-					Manager.NativeManager.Text("Intensity");
-					Manager.NativeManager.NextColumn();
-
-					var intensity = colorMarkerSelected ? internalState.GetColorMarkerIntensity(selectedIndex) : 0.0f;
-					var intensityArray = new float[1] { intensity };
-
-					Manager.NativeManager.SetNextItemWidth(-1);
-					if (Manager.NativeManager.DragFloat(id_color_intensity, intensityArray, 0.01f, 0.0f, float.MaxValue))
-					{
-						intensity = intensityArray[0];
-						internalState.SetColorMarkerIntensity(selectedIndex, intensity);
-						StoreValue();
-					}
-					Manager.NativeManager.NextColumn();
-
-					Manager.NativeManager.Columns(1);
 					Manager.NativeManager.EndDisabled();
 				}
 
