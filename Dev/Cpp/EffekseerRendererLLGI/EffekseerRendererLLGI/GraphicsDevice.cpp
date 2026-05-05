@@ -7,6 +7,38 @@ namespace EffekseerRendererLLGI
 {
 namespace Backend
 {
+namespace
+{
+LLGI::TextureWrapMode ToLLGITextureWrapMode(Effekseer::Backend::TextureWrapType wrapType)
+{
+	switch (wrapType)
+	{
+	case Effekseer::Backend::TextureWrapType::Clamp:
+		return LLGI::TextureWrapMode::Clamp;
+	case Effekseer::Backend::TextureWrapType::Repeat:
+		return LLGI::TextureWrapMode::Repeat;
+	case Effekseer::Backend::TextureWrapType::Mirror:
+		return LLGI::TextureWrapMode::Mirror;
+	default:
+		assert(0);
+		return LLGI::TextureWrapMode::Clamp;
+	}
+}
+
+LLGI::TextureMinMagFilter ToLLGITextureMinMagFilter(Effekseer::Backend::TextureSamplingType samplingType)
+{
+	switch (samplingType)
+	{
+	case Effekseer::Backend::TextureSamplingType::Linear:
+		return LLGI::TextureMinMagFilter::Linear;
+	case Effekseer::Backend::TextureSamplingType::Nearest:
+		return LLGI::TextureMinMagFilter::Nearest;
+	default:
+		assert(0);
+		return LLGI::TextureMinMagFilter::Linear;
+	}
+}
+} // namespace
 
 std::vector<uint8_t> Serialize(const std::vector<LLGI::DataStructure>& data)
 {
@@ -113,9 +145,9 @@ bool VertexBuffer::Init(int32_t size, bool isDynamic)
 
 void VertexBuffer::UpdateData(const void* src, int32_t size, int32_t offset)
 {
-	if (auto dst = static_cast<uint8_t*>(buffer_->Lock()))
+	if (auto dst = static_cast<uint8_t*>(buffer_->Lock(offset, size)))
 	{
-		memcpy(dst + offset, src, size);
+		memcpy(dst, src, size);
 		buffer_->Unlock();
 	}
 }
@@ -168,9 +200,9 @@ bool IndexBuffer::Init(int32_t elementCount, int32_t stride)
 
 void IndexBuffer::UpdateData(const void* src, int32_t size, int32_t offset)
 {
-	if (auto dst = static_cast<uint8_t*>(buffer_->Lock()))
+	if (auto dst = static_cast<uint8_t*>(buffer_->Lock(offset, size)))
 	{
-		memcpy(dst + offset, src, size);
+		memcpy(dst, src, size);
 		buffer_->Unlock();
 	}
 }
@@ -208,8 +240,10 @@ bool Texture::Init(const Effekseer::Backend::TextureParameter& param, const Effe
 	texParam.Size = LLGI::Vec3I(param.Size[0], param.Size[1], param.Size[2]);
 	texParam.MipLevelCount = param.MipLevelCount < 1 ? count : param.MipLevelCount;
 
-	// TODO : Fix it
-	texParam.MipLevelCount = 1;
+	if (!graphicsDevice_->GetGraphics()->GetIsMipmapGenerationSupportedOnTextureLoad())
+	{
+		texParam.MipLevelCount = 1;
+	}
 
 	LLGI::TextureFormatType format = LLGI::TextureFormatType::R8G8B8A8_UNORM;
 
@@ -289,10 +323,13 @@ bool Texture::Init(const Effekseer::Backend::TextureParameter& param, const Effe
 
 	if (initialData.size() > 0)
 	{
-		memcpy(buf, initialData.data(), initialData.size());
+		const auto textureMemorySize = LLGI::GetTextureMemorySize(texParam.Format, texParam.Size);
+		const auto copySize = (std::min)(initialData.size(), static_cast<size_t>(textureMemorySize));
+		memcpy(buf, initialData.data(), copySize);
 	}
 
 	texture->Unlock();
+	texture->GenerateMipMaps();
 
 	texture_ = LLGI::CreateSharedPtr(texture);
 	param_ = param;
@@ -833,8 +870,8 @@ void GraphicsDevice::Draw(const Effekseer::Backend::DrawParameter& drawParam)
 		{
 			auto tex = textureBinder->Texture.DownCast<Backend::Texture>();
 			commandList_->SetTexture((tex) ? tex->GetTexture().get() : nullptr,
-									 (LLGI::TextureWrapMode)textureBinder->WrapType,
-									 (LLGI::TextureMinMagFilter)textureBinder->SamplingType,
+									 ToLLGITextureWrapMode(textureBinder->WrapType),
+									 ToLLGITextureMinMagFilter(textureBinder->SamplingType),
 									 slot);
 		}
 		else if (auto computeBufferBinder = std::get_if<Effekseer::Backend::ComputeBufferBinder>(&binder))
@@ -899,18 +936,10 @@ void GraphicsDevice::Dispatch(const Effekseer::Backend::DispatchParameter& dispa
 		auto& binder = dispatchParam.ResourceBinders[slot];
 		if (auto textureBinder = std::get_if<Effekseer::Backend::TextureBinder>(&binder))
 		{
-			LLGI::TextureWrapMode ws[2];
-			ws[(int)Effekseer::Backend::TextureWrapType::Clamp] = LLGI::TextureWrapMode::Clamp;
-			ws[(int)Effekseer::Backend::TextureWrapType::Repeat] = LLGI::TextureWrapMode::Repeat;
-
-			LLGI::TextureMinMagFilter fs[2];
-			fs[(int)Effekseer::Backend::TextureSamplingType::Linear] = LLGI::TextureMinMagFilter::Linear;
-			fs[(int)Effekseer::Backend::TextureSamplingType::Nearest] = LLGI::TextureMinMagFilter::Nearest;
-
 			auto tex = textureBinder->Texture.DownCast<Backend::Texture>();
 			commandList_->SetTexture((tex) ? tex->GetTexture().get() : nullptr,
-									 ws[(size_t)textureBinder->WrapType],
-									 fs[(size_t)textureBinder->SamplingType],
+									 ToLLGITextureWrapMode(textureBinder->WrapType),
+									 ToLLGITextureMinMagFilter(textureBinder->SamplingType),
 									 slot);
 		}
 		else if (auto computeBufferBinder = std::get_if<Effekseer::Backend::ComputeBufferBinder>(&binder))

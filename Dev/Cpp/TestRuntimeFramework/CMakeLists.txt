@@ -2,21 +2,33 @@ cmake_minimum_required(VERSION 3.10)
 
 project(TestRuntimeFramework)
 
-set(effekseer_test_src
-    RenderingEnvironment/RenderingEnvironment.h
-    RenderingEnvironment/RenderingEnvironment.cpp
-    RenderingEnvironment/RenderingEnvironmentGL.h
-    RenderingEnvironment/RenderingEnvironmentGL.cpp
-    Runtime/EffectPlatform.h
-    Runtime/EffectPlatform.cpp
-    Runtime/EffectPlatformGLFW.h
-    Runtime/EffectPlatformGLFW.cpp
-    Runtime/EffectPlatformGL.h
-    Runtime/EffectPlatformGL.cpp)
+if(BUILD_WEBGPU_BROWSER_TEST AND NOT EMSCRIPTEN)
+  message(FATAL_ERROR "BUILD_WEBGPU_BROWSER_TEST requires an Emscripten CMake toolchain.")
+endif()
+if(BUILD_WEBGPU_BROWSER_TEST AND NOT BUILD_WEBGPU)
+  message(FATAL_ERROR "BUILD_WEBGPU_BROWSER_TEST requires BUILD_WEBGPU.")
+endif()
+
+if(BUILD_WEBGPU_BROWSER_TEST)
+  set(effekseer_test_src Runtime/EffectPlatform.h Runtime/EffectPlatform.cpp)
+else()
+  set(effekseer_test_src
+      RenderingEnvironment/RenderingEnvironment.h
+      RenderingEnvironment/RenderingEnvironment.cpp
+      RenderingEnvironment/RenderingEnvironmentGL.h
+      RenderingEnvironment/RenderingEnvironmentGL.cpp
+      Runtime/EffectPlatform.h
+      Runtime/EffectPlatform.cpp
+      Runtime/EffectPlatformGLFW.h
+      Runtime/EffectPlatformGLFW.cpp
+      Runtime/EffectPlatformGL.h
+      Runtime/EffectPlatformGL.cpp)
+endif()
 
 if(BUILD_DX12
    OR BUILD_METAL
-   OR BUILD_VULKAN)
+   OR BUILD_VULKAN
+   OR BUILD_WEBGPU)
   list(APPEND effekseer_test_src Runtime/EffectPlatformLLGI.h
        Runtime/EffectPlatformLLGI.cpp)
 endif()
@@ -34,6 +46,11 @@ endif()
 if(BUILD_VULKAN)
   list(APPEND effekseer_test_src Runtime/EffectPlatformVulkan.h
        Runtime/EffectPlatformVulkan.cpp)
+endif()
+
+if(BUILD_WEBGPU)
+  list(APPEND effekseer_test_src Runtime/EffectPlatformWebGPU.h
+       Runtime/EffectPlatformWebGPU.cpp)
 endif()
 
 if(WIN32)
@@ -56,10 +73,16 @@ if(WIN32)
   include_directories(${EFK_THIRDPARTY_INCLUDES} ../EffekseerRendererDX11/)
 endif()
 
+if(BUILD_WEBGPU)
+  include_directories(../3rdParty/LLGI/src)
+endif()
+
 set(common_lib)
 set(common_inc)
 
-list(APPEND common_lib EffekseerRendererGL)
+if(NOT BUILD_WEBGPU_BROWSER_TEST)
+  list(APPEND common_lib EffekseerRendererGL)
+endif()
 
 if(WIN32)
   list(APPEND common_lib EffekseerRendererDX11)
@@ -68,7 +91,8 @@ endif()
 
 if(BUILD_DX12
    OR BUILD_METAL
-   OR BUILD_VULKAN)
+   OR BUILD_VULKAN
+   OR BUILD_WEBGPU)
   list(APPEND common_lib LLGI)
 endif()
 
@@ -84,10 +108,17 @@ if(BUILD_VULKAN)
   list(APPEND common_lib EffekseerRendererVulkan)
 endif()
 
-list(APPEND common_lib Effekseer)
-list(APPEND common_lib OpenGLHelper)
+if(BUILD_WEBGPU)
+  list(APPEND common_lib EffekseerRendererWebGPU)
+endif()
 
-if(MSVC)
+list(APPEND common_lib Effekseer)
+if(NOT BUILD_WEBGPU_BROWSER_TEST)
+  list(APPEND common_lib OpenGLHelper)
+endif()
+
+if(BUILD_WEBGPU_BROWSER_TEST)
+elseif(MSVC)
 
 else()
   find_package(Threads REQUIRED)
@@ -124,13 +155,17 @@ if(BUILD_VULKAN)
     ${CMAKE_CURRENT_BINARY_DIR}/../3rdParty/LLGI/EP/Install/glslang/lib)
 endif()
 
-add_dependencies(${PROJECT_NAME} ExternalProject_glfw)
+if(NOT BUILD_WEBGPU_BROWSER_TEST)
+  add_dependencies(${PROJECT_NAME} ExternalProject_glfw)
+endif()
 
 if(BUILD_WITH_EASY_PROFILER)
   add_dependencies(${PROJECT_NAME} ExternalProject_easy_profiler)
 endif()
 
-if(BUILD_WITH_POSTFIX)
+if(BUILD_WEBGPU_BROWSER_TEST)
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${common_lib})
+elseif(BUILD_WITH_POSTFIX)
   target_link_libraries(${PROJECT_NAME} PUBLIC ${common_lib} debug glfw3d
                                                optimized glfw3)
 else()
@@ -139,7 +174,7 @@ endif()
 
 linkapplelibs(${PROJECT_NAME})
 
-if(UNIX AND NOT APPLE)
+if(UNIX AND NOT APPLE AND NOT BUILD_WEBGPU_BROWSER_TEST)
   find_package(X11 REQUIRED)
   target_link_libraries(${PROJECT_NAME} PUBLIC ${X11_LIBRARIES})
   find_package(Threads REQUIRED)

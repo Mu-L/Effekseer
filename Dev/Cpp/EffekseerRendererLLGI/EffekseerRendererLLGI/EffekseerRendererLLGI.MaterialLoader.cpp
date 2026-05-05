@@ -330,7 +330,8 @@ MaterialLoader ::~MaterialLoader()
 			return nullptr;
 		}
 
-		if (!compiled.GetHasValue(platformType_))
+		if (!compiled.GetHasValue(platformType_) &&
+			!(platformType_ == ::Effekseer::CompiledMaterialPlatformType::WebGPU && materialCompiler_ != nullptr))
 		{
 			return nullptr;
 		}
@@ -343,7 +344,16 @@ MaterialLoader ::~MaterialLoader()
 			return nullptr;
 		}
 
-		auto binary = compiled.GetBinary(platformType_);
+		auto binary = compiled.GetHasValue(platformType_) ? compiled.GetBinary(platformType_) : nullptr;
+		std::unique_ptr<::Effekseer::CompiledMaterialBinary, ::Effekseer::ReferenceDeleter<::Effekseer::CompiledMaterialBinary>> generatedBinary;
+		if (binary == nullptr && platformType_ == ::Effekseer::CompiledMaterialPlatformType::WebGPU && materialCompiler_ != nullptr)
+		{
+			generatedBinary = ::Effekseer::CreateUniqueReference(materialCompiler_->Compile(&materialFile));
+			if (generatedBinary != nullptr)
+			{
+				binary = generatedBinary.get();
+			}
+		}
 
 		return LoadAcutually(materialFile, binary);
 	}

@@ -17,6 +17,11 @@
 #include <Runtime/EffectPlatformVulkan.h>
 #endif
 
+#ifdef __EFFEKSEER_BUILD_WEBGPU__
+#include <Runtime/EffectPlatformWebGPU.h>
+#endif
+
+#include "BasicRendering.h"
 #include "../TestHelper.h"
 #include <iostream>
 
@@ -202,6 +207,14 @@ void BasicRuntimeTestPlatform(EffectPlatformInitializingParameter param, EffectP
 	}
 }
 
+template <class T>
+void RunBasicRuntimeTestOnPlatform(const EffectPlatformInitializingParameter& param, const char* suffix)
+{
+	auto platform = std::make_shared<T>();
+	BasicRuntimeTestPlatform(param, platform.get(), "", suffix);
+	platform->Terminate();
+}
+
 void BasicRuntimeTest()
 {
 	EffectPlatformInitializingParameter param;
@@ -209,18 +222,20 @@ void BasicRuntimeTest()
 
 #ifdef _WIN32
 	{
-		auto platform = std::make_shared<EffectPlatformDX11>();
-		BasicRuntimeTestPlatform(param, platform.get(), "", "_DX11");
-		platform->Terminate();
+		RunBasicRuntimeTestOnPlatform<EffectPlatformDX11>(param, "_DX11");
 	}
 #endif
 
 #if !defined(__FROM_CI__)
 #ifdef __EFFEKSEER_BUILD_VULKAN__
 	{
-		auto platform = std::make_shared<EffectPlatformVulkan>();
-		BasicRuntimeTestPlatform(param, platform.get(), "", "_Vulkan");
-		platform->Terminate();
+		RunBasicRuntimeTestOnPlatform<EffectPlatformVulkan>(param, "_Vulkan");
+	}
+#endif
+
+#ifdef __EFFEKSEER_BUILD_WEBGPU__
+	{
+		RunBasicRuntimeTestOnPlatform<EffectPlatformWebGPU>(param, "_WebGPU");
 	}
 #endif
 
@@ -229,45 +244,33 @@ void BasicRuntimeTest()
 
 #ifdef __EFFEKSEER_BUILD_DX12__
 		{
-			auto platform = std::make_shared<EffectPlatformDX12>();
-			BasicRuntimeTestPlatform(param, platform.get(), "", "_DX12");
-			platform->Terminate();
+			RunBasicRuntimeTestOnPlatform<EffectPlatformDX12>(param, "_DX12");
 		}
 #endif
 
 		{
-			auto platform = std::make_shared<EffectPlatformDX9>();
-			BasicRuntimeTestPlatform(param, platform.get(), "", "_DX9");
-			platform->Terminate();
+			RunBasicRuntimeTestOnPlatform<EffectPlatformDX9>(param, "_DX9");
 		}
 
 		{
-			auto platform = std::make_shared<EffectPlatformGL>();
-			BasicRuntimeTestPlatform(param, platform.get(), "", "_GL");
-			platform->Terminate();
+			RunBasicRuntimeTestOnPlatform<EffectPlatformGL>(param, "_GL");
 		}
 	}
 
 #elif defined(__APPLE__)
 
 	{
-		auto platform = std::make_shared<EffectPlatformMetal>();
-		BasicRuntimeTestPlatform(param, platform.get(), "", "_Metal");
-		platform->Terminate();
+		RunBasicRuntimeTestOnPlatform<EffectPlatformMetal>(param, "_Metal");
 	}
 
 	{
-		auto platform = std::make_shared<EffectPlatformGL>();
-		BasicRuntimeTestPlatform(param, platform.get(), "", "_GL");
-		platform->Terminate();
+		RunBasicRuntimeTestOnPlatform<EffectPlatformGL>(param, "_GL");
 	}
 
 #else
 #ifndef __EFFEKSEER_BUILD_VERSION16__
 	{
-		auto platform = std::make_shared<EffectPlatformGL>();
-		BasicRuntimeTestPlatform(param, platform.get(), "", "_GL");
-		platform->Terminate();
+		RunBasicRuntimeTestOnPlatform<EffectPlatformGL>(param, "_GL");
 	}
 #endif
 #endif
