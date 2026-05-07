@@ -295,6 +295,10 @@ namespace Effekseer.GUI.Dock
 
 	class NodeTreeViewNode
 	{
+		const int KeyEnter = 257;
+		const int KeyLeftShift = 340;
+		const int KeyRightShift = 344;
+
 		string id = "";
 		public int UniqueID { get; private set; }
 
@@ -380,11 +384,6 @@ namespace Effekseer.GUI.Dock
 
 		public void AddEvent(bool recursion)
 		{
-			if (Node is Data.Node)
-			{
-				var realNode = (Data.Node)Node;
-			}
-
 			Node.OnAfterAddNode += OnAfterAddNode;
 			Node.OnAfterRemoveNode += OnAfterRemoveNode;
 			Node.OnAfterExchangeNodes += OnAfterExchangeNodes;
@@ -399,11 +398,6 @@ namespace Effekseer.GUI.Dock
 
 		public void RemoveEvent(bool recursion)
 		{
-			if (Node is Data.Node)
-			{
-				var realNode = (Data.Node)Node;
-			}
-
 			Node.OnAfterAddNode -= OnAfterAddNode;
 			Node.OnAfterRemoveNode -= OnAfterRemoveNode;
 			Node.OnAfterExchangeNodes -= OnAfterExchangeNodes;
@@ -420,100 +414,123 @@ namespace Effekseer.GUI.Dock
 		{
 			var node = Node as Data.Node;
 			float lodButtonSize = Manager.NativeManager.GetTextLineHeight();
-			if (node != null)
+			if (node == null)
 			{
-				int enabledLevels = Core.LodValues.GetEnabledLevelsBits();
-				int enabledLevelsCount = 0;
-				for (int i = 0; i < LOD.LevelCount; i++)
-				{
-					enabledLevelsCount += ((enabledLevels & (1 << i)) > 0) ? 1 : 0;
-				}
+				Manager.NativeManager.Button("##LodDummy", lodButtonSize, lodButtonSize);
+				return;
+			}
 
-				int levels = node.CommonValues.LodParameter.MatchingLODs & enabledLevels;
+			int enabledLevels = Core.LodValues.GetEnabledLevelsBits();
+			int levels = node.CommonValues.LodParameter.MatchingLODs & enabledLevels;
 
-				Manager.NativeManager.Button(id, lodButtonSize, lodButtonSize);
+			Manager.NativeManager.Button("##LOD", lodButtonSize, lodButtonSize);
+			DrawLODButtonSegments(enabledLevels, levels);
 
+			if (Manager.NativeManager.IsItemClicked(0))
+			{
+				Manager.NativeManager.OpenPopup("LodEditor");
+			}
 
-				for (int i = 0; i < LOD.LevelCount; i++)
-				{
-					bool isEnabled = (levels & (1 << i)) > 0;
-					if (!isEnabled) continue;
+			UpdateLODPopup(node, enabledLevels, levels);
+		}
 
-					float boxW = Manager.NativeManager.GetItemRectSizeX();
-					float boxH = Manager.NativeManager.GetItemRectSizeY();
-					float pad = 2F;
-					float spacing = 2F;
-					float entryW = boxW - 2F * pad;
-					float entryH = (boxH - 2F * pad - enabledLevelsCount * spacing) / enabledLevelsCount;
-					float x = Manager.NativeManager.GetItemRectMinX() + pad;
-					float y = Manager.NativeManager.GetItemRectMinY() + (entryH + spacing) * i + pad + 1F;
+		int CountEnabledLODLevels(int enabledLevels)
+		{
+			int count = 0;
+			for (int i = 0; i < LOD.LevelCount; i++)
+			{
+				count += ((enabledLevels & (1 << i)) > 0) ? 1 : 0;
+			}
+			return Math.Max(1, count);
+		}
 
-					Manager.NativeManager.AddRectFilled(x, y, x + entryW, y + entryH,
-						LOD.LevelColors[i], 5, 0);
-				}
+		void DrawLODButtonSegments(int enabledLevels, int matchingLevels)
+		{
+			int enabledLevelsCount = CountEnabledLODLevels(enabledLevels);
 
-				if (Manager.NativeManager.IsItemClicked(0))
-				{
-					Manager.NativeManager.OpenPopup("LodEditor " + id);
-				}
+			for (int i = 0; i < LOD.LevelCount; i++)
+			{
+				bool isEnabled = (matchingLevels & (1 << i)) > 0;
+				if (!isEnabled) continue;
 
-				if (Manager.NativeManager.BeginPopup("LodEditor " + id))
-				{
-					if (Core.LodValues.GetEnabledLevelsBits() == 1)
-					{
-						Manager.NativeManager.Text(MultiLanguageTextProvider.GetText("LOD_NotConfigured"));
-						if (Manager.NativeManager.Button(MultiLanguageTextProvider.GetText("LOD_Configure")))
-						{
-							var state = Manager.MainWindow.GetState();
-							Manager.SelectOrShowWindow(typeof(Dock.LOD),
-								new swig.Vec2(state.Width * 0.25f, state.Height * 0.5f), true, false);
-						}
-					}
-					else
-					{
-						Manager.NativeManager.Text(MultiLanguageTextProvider.GetText("LOD_SelectMatching"));
-						for (int i = 0; i < LOD.LevelCount; i++)
-						{
-							if ((enabledLevels & (1 << i)) == 0) break;
+				float boxW = Manager.NativeManager.GetItemRectSizeX();
+				float boxH = Manager.NativeManager.GetItemRectSizeY();
+				float pad = 2F;
+				float spacing = 2F;
+				float entryW = boxW - 2F * pad;
+				float entryH = (boxH - 2F * pad - enabledLevelsCount * spacing) / enabledLevelsCount;
+				float x = Manager.NativeManager.GetItemRectMinX() + pad;
+				float y = Manager.NativeManager.GetItemRectMinY() + (entryH + spacing) * i + pad + 1F;
 
-							bool[] level0Match = { (levels & (1 << i)) > 0 };
+				Manager.NativeManager.AddRectFilled(x, y, x + entryW, y + entryH, LOD.LevelColors[i], 5, 0);
+			}
+		}
 
-							Manager.NativeManager.AlignTextToFramePadding();
-							Manager.NativeManager.PushStyleColor(ImGuiColFlags.Text, LOD.LevelColors[i]);
-							Manager.NativeManager.Text(MultiLanguageTextProvider.GetText("LOD_Level") + " " + i);
-							Manager.NativeManager.PopStyleColor();
-							Manager.NativeManager.SameLine();
-							if (Manager.NativeManager.Checkbox("##level" + i, level0Match))
-							{
-								node.CommonValues.LodParameter.MatchingLODs.SetValue(
-									(level0Match[0] ? 1 << i : 0) | (levels & ~(1 << i)));
-								ApplyLODSettingsToChildren();
-							}
-						}
+		void UpdateLODPopup(Data.Node node, int enabledLevels, int levels)
+		{
+			if (!Manager.NativeManager.BeginPopup("LodEditor"))
+			{
+				return;
+			}
 
-						Manager.NativeManager.Text(MultiLanguageTextProvider.GetText("LOD_Behaviour"));
-						var prevBehaviour = node.CommonValues.LodParameter.LodBehaviour.Value;
-						lodBehaviourEnumControl.Update();
-						// detecting value change without listener
-						if (prevBehaviour != node.CommonValues.LodParameter.LodBehaviour.Value)
-						{
-							ApplyLODSettingsToChildren();
-						}
-						Manager.NativeManager.Separator();
-						if (Manager.NativeManager.Button(MultiLanguageTextProvider.GetText("LOD_ApplyToChildren")))
-						{
-							ApplyLODSettingsToChildren();
-						}
-					}
-
-					Manager.NativeManager.EndPopup();
-				}
+			if (enabledLevels == 1)
+			{
+				UpdateLODNotConfiguredPopup();
 			}
 			else
 			{
-				Manager.NativeManager.Button("##dummy", lodButtonSize, lodButtonSize);
+				UpdateLODConfiguredPopup(node, enabledLevels, levels);
 			}
 
+			Manager.NativeManager.EndPopup();
+		}
+
+		void UpdateLODNotConfiguredPopup()
+		{
+			Manager.NativeManager.Text(MultiLanguageTextProvider.GetText("LOD_NotConfigured"));
+			if (Manager.NativeManager.Button(MultiLanguageTextProvider.GetText("LOD_Configure")))
+			{
+				var state = Manager.MainWindow.GetState();
+				Manager.SelectOrShowWindow(typeof(Dock.LOD),
+					new swig.Vec2(state.Width * 0.25f, state.Height * 0.5f), true, false);
+			}
+		}
+
+		void UpdateLODConfiguredPopup(Data.Node node, int enabledLevels, int levels)
+		{
+			Manager.NativeManager.Text(MultiLanguageTextProvider.GetText("LOD_SelectMatching"));
+			for (int i = 0; i < LOD.LevelCount; i++)
+			{
+				if ((enabledLevels & (1 << i)) == 0) break;
+
+				bool[] level0Match = { (levels & (1 << i)) > 0 };
+
+				Manager.NativeManager.AlignTextToFramePadding();
+				Manager.NativeManager.PushStyleColor(ImGuiColFlags.Text, LOD.LevelColors[i]);
+				Manager.NativeManager.Text(MultiLanguageTextProvider.GetText("LOD_Level") + " " + i);
+				Manager.NativeManager.PopStyleColor();
+				Manager.NativeManager.SameLine();
+				if (Manager.NativeManager.Checkbox("##level" + i, level0Match))
+				{
+					node.CommonValues.LodParameter.MatchingLODs.SetValue(
+						(level0Match[0] ? 1 << i : 0) | (levels & ~(1 << i)));
+					ApplyLODSettingsToChildren();
+				}
+			}
+
+			Manager.NativeManager.Text(MultiLanguageTextProvider.GetText("LOD_Behaviour"));
+			var prevBehaviour = node.CommonValues.LodParameter.LodBehaviour.Value;
+			lodBehaviourEnumControl.Update();
+			if (prevBehaviour != node.CommonValues.LodParameter.LodBehaviour.Value)
+			{
+				ApplyLODSettingsToChildren();
+			}
+
+			Manager.NativeManager.Separator();
+			if (Manager.NativeManager.Button(MultiLanguageTextProvider.GetText("LOD_ApplyToChildren")))
+			{
+				ApplyLODSettingsToChildren();
+			}
 		}
 
 		void UpdateVisibleButton()
@@ -523,19 +540,7 @@ namespace Effekseer.GUI.Dock
 			float buttonSize = Manager.NativeManager.GetTextLineHeight();
 			if (Manager.NativeManager.IconButton(visible ? Icons.VisibleShow : Icons.VisibleHide, buttonSize))
 			{
-				int LEFT_SHIFT = 340;
-				int RIGHT_SHIFT = 344;
-
-				if (Manager.NativeManager.IsKeyDown(LEFT_SHIFT) ||
-					Manager.NativeManager.IsKeyDown(RIGHT_SHIFT) ||
-					((Node is Effekseer.Data.Node) && (Node as Effekseer.Data.Node).DrawingValues.Type.Value == Data.RendererValues.ParamaterType.None))
-				{
-					ChangeVisible(true, !visible);
-				}
-				else
-				{
-					ChangeVisible(false, !visible);
-				}
+				ChangeVisible(ShouldChangeVisibilityRecursively(), !visible);
 
 				treeView.isVisibleChanging = true;
 				treeView.changingVisibleMode = Node.IsRendered;
@@ -548,105 +553,151 @@ namespace Effekseer.GUI.Dock
 			}
 		}
 
+		bool ShouldChangeVisibilityRecursively()
+		{
+			var node = Node as Data.Node;
+			return Manager.NativeManager.IsKeyDown(KeyLeftShift) ||
+				Manager.NativeManager.IsKeyDown(KeyRightShift) ||
+				(node != null && node.DrawingValues.Type.Value == Data.RendererValues.ParamaterType.None);
+		}
+
 		public void Update()
 		{
 			Manager.NativeManager.TableNextRow();
 			Manager.NativeManager.TableSetColumnIndex(0);
 
+			UpdateDDTargetSeparator(false);
+			UpdateTreeNode();
+			UpdateNodeActions();
+
+			if (IsExpanding)
+			{
+				UpdateChildren();
+
+				// pair with TreeNodeEx
+				Manager.NativeManager.TreePop();
+			}
+		}
+
+		private swig.TreeNodeFlags GetTreeNodeFlags()
+		{
 			var flag = swig.TreeNodeFlags.OpenOnArrow | swig.TreeNodeFlags.OpenOnDoubleClick | swig.TreeNodeFlags.DefaultOpen | swig.TreeNodeFlags.SpanFullWidth;
 
-			if (Core.SelectedNode == this.Node)
+			if (Core.SelectedNode == Node)
 			{
 				flag = flag | swig.TreeNodeFlags.Selected;
 			}
 
-			if (this.Node.Children.Count == 0)
+			if (Node.Children.Count == 0)
 			{
 				flag = flag | swig.TreeNodeFlags.Leaf;
 			}
 
-			UpdateDDTargetSeparator(false);
+			return flag;
+		}
 
+		private string GetNodeIcon()
+		{
+			var node = Node as Data.Node;
+			if (node == null)
+			{
+				return Icons.NodeTypeEmpty;
+			}
+
+			switch (node.DrawingValues.Type.Value)
+			{
+				case Data.RendererValues.ParamaterType.Sprite:
+					return Icons.NodeTypeSprite;
+				case Data.RendererValues.ParamaterType.Ring:
+					return Icons.NodeTypeRing;
+				case Data.RendererValues.ParamaterType.Ribbon:
+					return Icons.NodeTypeRibbon;
+				case Data.RendererValues.ParamaterType.Model:
+					return Icons.NodeTypeModel;
+				case Data.RendererValues.ParamaterType.Track:
+					return Icons.NodeTypeTrack;
+				default:
+					return Icons.NodeTypeEmpty;
+			}
+		}
+
+		private void UpdateTreeNode()
+		{
 			if (requiredToExpand)
 			{
 				Manager.NativeManager.SetNextItemOpen(true);
 				requiredToExpand = false;
 			}
 
-			var icon = Icons.NodeTypeEmpty;
-			var node = Node as Data.Node;
-			if (node != null)
-			{
-				if (node.DrawingValues.Type.Value == Data.RendererValues.ParamaterType.Sprite) icon = Icons.NodeTypeSprite;
-				if (node.DrawingValues.Type.Value == Data.RendererValues.ParamaterType.Ring) icon = Icons.NodeTypeRing;
-				if (node.DrawingValues.Type.Value == Data.RendererValues.ParamaterType.Ribbon) icon = Icons.NodeTypeRibbon;
-				if (node.DrawingValues.Type.Value == Data.RendererValues.ParamaterType.Model) icon = Icons.NodeTypeModel;
-				if (node.DrawingValues.Type.Value == Data.RendererValues.ParamaterType.Track) icon = Icons.NodeTypeTrack;
-			}
-
-			// Change background color
 			if (TreeNodeIndex % 2 == 1)
 			{
 				Manager.NativeManager.DrawLineBackground(Manager.NativeManager.GetTextLineHeight(), 0x0cffffff);
 			}
 
-			// Extend clickable space
-			var label = icon + " " + Node.Name + id;
-			IsExpanding = Manager.NativeManager.TreeNodeEx(label, flag);
+			var label = GetNodeIcon() + " " + Node.Name + id;
+			IsExpanding = Manager.NativeManager.TreeNodeEx(label, GetTreeNodeFlags());
 
 			SelectNodeIfClicked();
-
 			treeView.Popup();
+			UpdateDragDropSourceAndTarget();
+		}
 
+		private void UpdateDragDropSourceAndTarget()
+		{
 			if (Node is Data.NodeRoot)
 			{
 				UpdateDDTargetNode();
-			}
-			else if (Node is Data.Node)
-			{
-				// D&D Source
-				if (Manager.NativeManager.BeginDragDropSource())
-				{
-					byte[] idBuf = BitConverter.GetBytes(UniqueID);
-					if (Manager.NativeManager.SetDragDropPayload(treeView.treePyloadName, idBuf, idBuf.Length))
-					{
-					}
-					Manager.NativeManager.Text(this.Node.Name);
-
-					Manager.NativeManager.EndDragDropSource();
-				}
-
-				UpdateDDTargetNode();
-
-				Manager.NativeManager.TableSetColumnIndex(1);
-
-				Manager.NativeManager.SetCursorPosY(Manager.NativeManager.GetCursorPosY() + 5);
-
-				UpdateLODButton();
-
-				Manager.NativeManager.SameLine();
-
-				UpdateVisibleButton();
+				return;
 			}
 
-			if (IsExpanding)
+			if (!(Node is Data.Node))
 			{
-				Children.Lock();
+				return;
+			}
 
-				foreach (var child in Children.Internal)
-				{
-					child.Update();
-				}
+			if (Manager.NativeManager.BeginDragDropSource())
+			{
+				byte[] idBuf = BitConverter.GetBytes(UniqueID);
+				Manager.NativeManager.SetDragDropPayload(treeView.treePyloadName, idBuf, idBuf.Length);
+				Manager.NativeManager.Text(Node.Name);
 
-				Children.Unlock();
+				Manager.NativeManager.EndDragDropSource();
+			}
 
-				if (Children.Count != 0)
-				{
-					//Children.Internal.Last().UpdateDDTargetSeparator(true);
-				}
+			UpdateDDTargetNode();
+		}
 
-				// pair with TreeNodeEx
-				Manager.NativeManager.TreePop();
+		private void UpdateNodeActions()
+		{
+			if (!(Node is Data.Node))
+			{
+				return;
+			}
+
+			Manager.NativeManager.TableSetColumnIndex(1);
+			Manager.NativeManager.SetCursorPosY(Manager.NativeManager.GetCursorPosY() + 5);
+
+			Manager.NativeManager.PushID(UniqueID);
+			UpdateLODButton();
+			Manager.NativeManager.SameLine();
+			UpdateVisibleButton();
+			Manager.NativeManager.PopID();
+		}
+
+		private void UpdateChildren()
+		{
+			Children.Lock();
+
+			foreach (var child in Children.Internal)
+			{
+				child.Update();
+			}
+
+			Children.Unlock();
+
+			if (Children.Count != 0)
+			{
+				//Children.Internal.Last().UpdateDDTargetSeparator(true);
 			}
 		}
 
@@ -671,9 +722,7 @@ namespace Effekseer.GUI.Dock
 
 		private void SelectNodeIfClicked()
 		{
-			int KEY_ENTER = 257;
-
-			if ((Manager.NativeManager.IsItemFocused() && Manager.NativeManager.IsKeyDown(KEY_ENTER)) ||
+			if ((Manager.NativeManager.IsItemFocused() && Manager.NativeManager.IsKeyDown(KeyEnter)) ||
 				Manager.NativeManager.IsItemClicked(0) ||
 				Manager.NativeManager.IsItemClicked(1))
 			{
