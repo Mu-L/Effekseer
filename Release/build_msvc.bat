@@ -110,8 +110,18 @@ echo ------------------------------------
 mkdir build_%generate_dir%
 cd build_%generate_dir%
 cmake -G %generator% -A %platform% -DCMAKE_INSTALL_PREFIX=../install_%generate_dir% -DUSE_MSVC_RUNTIME_LIBRARY_DLL=%enable_rtdll% -DUSE_LLGI=ON -DBUILD_DX12=ON -DBUILD_VULKAN=%enable_vulkan% .. -DCMAKE_DEBUG_POSTFIX=d
+if errorlevel 1 goto ERROR
 cmake --build . --config Debug --target INSTALL
+if errorlevel 1 goto ERROR
 cmake --build . --config Release --target INSTALL
+if errorlevel 1 goto ERROR
 
 @echo on
 pause
+exit /b 0
+
+:ERROR
+echo Build failed.
+@echo on
+pause
+exit /b 1

@@ -58,6 +58,9 @@ if(BUILD_VULKAN)
     set(ENABLE_GLSLANG_BINARIES
         OFF
         CACHE BOOL "For glslang" FORCE)
+    set(ENABLE_OPT
+        OFF
+        CACHE BOOL "For glslang" FORCE)
 
     set(GLSLANG_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/3rdParty/glslang/"
                             "${CMAKE_CURRENT_SOURCE_DIR}/src/3rdParty/")
