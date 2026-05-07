@@ -8,7 +8,9 @@
 #include <LLGI.Graphics.h>
 #include <LLGI.PipelineState.h>
 #include <assert.h>
+#include <memory>
 #include <set>
+#include <vector>
 
 namespace EffekseerRendererLLGI
 {
@@ -314,6 +316,9 @@ private:
 	LLGI::Graphics* graphics_ = nullptr;
 	LLGI::CommandList* commandList_ = nullptr;
 	LLGI::RenderPassPipelineState* renderPassPipelineState_ = nullptr;
+	std::vector<std::shared_ptr<LLGI::Texture>> pendingMipMapTextures_;
+
+	void FlushPendingMipMapGenerations();
 
 public:
 	GraphicsDevice(LLGI::Graphics* graphics);
@@ -325,6 +330,8 @@ public:
 	void ResetDevice();
 
 	LLGI::Graphics* GetGraphics();
+
+	void QueueMipMapGeneration(LLGI::Texture* texture);
 
 	void Register(DeviceObject* deviceObject);
 

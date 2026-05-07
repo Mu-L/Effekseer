@@ -38,6 +38,15 @@ LLGI::TextureMinMagFilter ToLLGITextureMinMagFilter(Effekseer::Backend::TextureS
 		return LLGI::TextureMinMagFilter::Linear;
 	}
 }
+
+bool CanGenerateMipMap(const Effekseer::Backend::TextureParameter& param)
+{
+	return param.MipLevelCount > 1 &&
+		   param.Dimension == 2 &&
+		   param.Size[2] == 1 &&
+		   param.SampleCount == 1 &&
+		   !Effekseer::Backend::IsDepthTextureFormat(param.Format);
+}
 } // namespace
 
 std::vector<uint8_t> Serialize(const std::vector<LLGI::DataStructure>& data)
@@ -329,7 +338,11 @@ bool Texture::Init(const Effekseer::Backend::TextureParameter& param, const Effe
 	}
 
 	texture->Unlock();
-	texture->GenerateMipMaps();
+
+	if (CanGenerateMipMap(param))
+	{
+		graphicsDevice_->QueueMipMapGeneration(texture);
+	}
 
 	texture_ = LLGI::CreateSharedPtr(texture);
 	param_ = param;
@@ -673,6 +686,31 @@ LLGI::Graphics* GraphicsDevice::GetGraphics()
 	return graphics_;
 }
 
+void GraphicsDevice::QueueMipMapGeneration(LLGI::Texture* texture)
+{
+	if (texture == nullptr)
+	{
+		return;
+	}
+
+	pendingMipMapTextures_.emplace_back(LLGI::CreateSharedPtr(texture, true));
+}
+
+void GraphicsDevice::FlushPendingMipMapGenerations()
+{
+	if (commandList_ == nullptr || pendingMipMapTextures_.empty())
+	{
+		return;
+	}
+
+	for (auto& texture : pendingMipMapTextures_)
+	{
+		commandList_->GenerateMipMap(texture.get());
+	}
+
+	pendingMipMapTextures_.clear();
+}
+
 void GraphicsDevice::Register(DeviceObject* deviceObject)
 {
 	objects_.insert(deviceObject);
@@ -897,6 +935,8 @@ void GraphicsDevice::BeginRenderPass(Effekseer::Backend::RenderPassRef& renderPa
 		return;
 	}
 
+	FlushPendingMipMapGenerations();
+
 	auto llgiRenderPass = renderPass.DownCast<Backend::RenderPass>()->GetRenderPass();
 	llgiRenderPass->SetIsColorCleared(isColorCleared);
 	llgiRenderPass->SetClearColor(LLGI::Color8(clearColor.R, clearColor.G, clearColor.B, clearColor.A));
@@ -962,6 +1002,7 @@ void GraphicsDevice::Dispatch(const Effekseer::Backend::DispatchParameter& dispa
 
 void GraphicsDevice::BeginComputePass()
 {
+	FlushPendingMipMapGenerations();
 	commandList_->BeginComputePass();
 }
 
