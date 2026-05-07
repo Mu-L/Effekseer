@@ -14,6 +14,63 @@
 namespace efk
 {
 
+#ifdef _WIN32
+namespace
+{
+
+bool GetWindowMonitorInfo(HWND hwnd, MONITORINFO& monitorInfo)
+{
+	monitorInfo = {};
+	monitorInfo.cbSize = sizeof(MONITORINFO);
+
+	HMONITOR monitor = ::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+	return monitor != nullptr && ::GetMonitorInfo(monitor, &monitorInfo) != FALSE;
+}
+
+void ApplyWorkAreaToMaxInfo(HWND hwnd, MINMAXINFO* maxInfo)
+{
+	MONITORINFO monitorInfo;
+	if (!GetWindowMonitorInfo(hwnd, monitorInfo))
+	{
+		return;
+	}
+
+	const RECT& monitorRect = monitorInfo.rcMonitor;
+	const RECT& workRect = monitorInfo.rcWork;
+	maxInfo->ptMaxPosition.x = workRect.left - monitorRect.left;
+	maxInfo->ptMaxPosition.y = workRect.top - monitorRect.top;
+	maxInfo->ptMaxSize.x = workRect.right - workRect.left;
+	maxInfo->ptMaxSize.y = workRect.bottom - workRect.top;
+}
+
+void FitMaximizedWindowToWorkArea(HWND hwnd)
+{
+	WINDOWPLACEMENT placement = {};
+	placement.length = sizeof(WINDOWPLACEMENT);
+	if (!::GetWindowPlacement(hwnd, &placement) || placement.showCmd != SW_MAXIMIZE)
+	{
+		return;
+	}
+
+	MONITORINFO monitorInfo;
+	if (!GetWindowMonitorInfo(hwnd, monitorInfo))
+	{
+		return;
+	}
+
+	const RECT& workRect = monitorInfo.rcWork;
+	::SetWindowPos(hwnd,
+				   nullptr,
+				   workRect.left,
+				   workRect.top,
+				   workRect.right - workRect.left,
+				   workRect.bottom - workRect.top,
+				   SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+}
+
+} // namespace
+#endif
+
 void GLFW_ResizeCallback(GLFWwindow* w, int x, int y)
 {
 	auto w_ = (Window*)glfwGetWindowUserPointer(w);
@@ -142,6 +199,7 @@ bool Window::Initialize(std::shared_ptr<Effekseer::MainWindow> mainWindow, Effek
 		DWORD wndStyle = ::GetWindowLong(hwnd, GWL_STYLE);
 		wndStyle |= WS_SIZEBOX | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
 		::SetWindowLong(hwnd, GWL_STYLE, wndStyle);
+		FitMaximizedWindowToWorkArea(hwnd);
 	}
 #endif
 
@@ -325,6 +383,9 @@ LRESULT CALLBACK Window::WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpar
 
 	switch (msg)
 	{
+	case WM_GETMINMAXINFO:
+		ApplyWorkAreaToMaxInfo(hwnd, (MINMAXINFO*)lparam);
+		return 0;
 	case WM_NCCALCSIZE:
 	{
 		WINDOWPLACEMENT placement;
