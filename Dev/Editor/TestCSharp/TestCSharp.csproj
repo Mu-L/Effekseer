@@ -9,7 +9,7 @@
     <OutputPath>../../release/</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <StartupObject>TestCSharp.Program</StartupObject>
-    <AssemblyName>Effekseer</AssemblyName>
+    <AssemblyName>TestCSharp</AssemblyName>
     <DefineConstants>SCRIPT_ENABLED;DOTNET_STARNDARD;</DefineConstants>
   </PropertyGroup>
 

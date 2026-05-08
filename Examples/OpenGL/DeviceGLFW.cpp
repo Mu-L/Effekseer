@@ -1,4 +1,4 @@
-#include "DeviceGLFW.h"
+﻿#include "DeviceGLFW.h"
 
 Utils::Vec2I DeviceGLFW::GetWindowSize() const
 {
