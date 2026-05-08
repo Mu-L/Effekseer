@@ -8,6 +8,7 @@
 // #include <imgui_internal.h>
 
 #include "efkMat.CommandManager.h"
+#include "efkMat.GradientEditor.h"
 #include "efkMat.Models.h"
 
 #include <nfd.h>
@@ -19,8 +20,6 @@
 
 #include <efkMat.StringContainer.h>
 #include <efkMat.TextExporter.h>
-
-#include <ImGradientHDR.h>
 
 #include "../EffekseerMaterialCompiler/OpenGL/EffekseerMaterialCompilerGL.h"
 #include <Effekseer/Material/Effekseer.MaterialFile.h>
@@ -1569,117 +1568,11 @@ void Editor::UpdateParameterEditor(std::shared_ptr<Node> node)
 		{
 			assert(p->GradientData != nullptr);
 
-			ImGradientHDRState state;
-
-			state.ColorCount = p->GradientData->ColorCount;
-
-			for (int i = 0; i < state.ColorCount; i++)
+			auto gradient = *p->GradientData;
+			if (UpdateGradientEditor(static_cast<int32_t>(node->GUID), nameStr.c_str(), gradient))
 			{
-				state.Colors[i].Color = p->GradientData->Colors[i].Color;
-				state.Colors[i].Intensity = p->GradientData->Colors[i].Intensity;
-				state.Colors[i].Position = p->GradientData->Colors[i].Position;
+				material->ChangeValue(p, gradient);
 			}
-
-			state.AlphaCount = p->GradientData->AlphaCount;
-
-			for (int i = 0; i < state.AlphaCount; i++)
-			{
-				state.Alphas[i].Alpha = p->GradientData->Alphas[i].Alpha;
-				state.Alphas[i].Position = p->GradientData->Alphas[i].Position;
-			}
-
-			ImGradientHDRTemporaryState tempState;
-
-			ImGui::PushID(node->GUID);
-
-			const int idSelectedMarkerType = 100;
-			const int idSelectedIndex = 101;
-			const int idDraggingMarkerType = 102;
-			const int idDraggingIndex = 103;
-
-			tempState.selectedMarkerType = static_cast<ImGradientHDRMarkerType>(ImGui::GetStateStorage()->GetInt(idSelectedMarkerType, static_cast<int>(ImGradientHDRMarkerType::Unknown)));
-			tempState.selectedIndex = ImGui::GetStateStorage()->GetInt(idSelectedIndex, -1);
-			tempState.draggingMarkerType = static_cast<ImGradientHDRMarkerType>(ImGui::GetStateStorage()->GetInt(idDraggingMarkerType, static_cast<int>(ImGradientHDRMarkerType::Unknown)));
-			tempState.draggingIndex = ImGui::GetStateStorage()->GetInt(idDraggingIndex, -1);
-
-			if (ImGradientHDR(node->GUID, state, tempState))
-			{
-				material->MakeDirty(node);
-			}
-
-			if (tempState.selectedMarkerType == ImGradientHDRMarkerType::Color)
-			{
-				auto selectedColorMarker = state.GetColorMarker(tempState.selectedIndex);
-				if (selectedColorMarker != nullptr)
-				{
-					if (ImGui::ColorEdit3("Color", selectedColorMarker->Color.data(), ImGuiColorEditFlags_Float))
-					{
-						material->MakeDirty(node);
-					}
-
-					if (ImGui::DragFloat("Intensity", &selectedColorMarker->Intensity, 0.1f, 0.0f, 100.0f, "%f", 1.0f))
-					{
-						material->MakeDirty(node);
-					}
-				}
-			}
-
-			if (tempState.selectedMarkerType == ImGradientHDRMarkerType::Alpha)
-			{
-				auto selectedAlphaMarker = state.GetAlphaMarker(tempState.selectedIndex);
-				if (selectedAlphaMarker != nullptr)
-				{
-					if (ImGui::DragFloat("Alpha", &selectedAlphaMarker->Alpha, 0.1f, 0.0f, 1.0f, "%f", 1.0f))
-					{
-						material->MakeDirty(node);
-					}
-				}
-			}
-
-			if (tempState.selectedMarkerType != ImGradientHDRMarkerType::Unknown)
-			{
-				if (ImGui::Button("Delete"))
-				{
-					material->MakeDirty(node);
-
-					if (tempState.selectedMarkerType == ImGradientHDRMarkerType::Color)
-					{
-						state.RemoveColorMarker(tempState.selectedIndex);
-						tempState = ImGradientHDRTemporaryState{};
-					}
-					else if (tempState.selectedMarkerType == ImGradientHDRMarkerType::Alpha)
-					{
-						state.RemoveAlphaMarker(tempState.selectedIndex);
-						tempState = ImGradientHDRTemporaryState{};
-					}
-				}
-			}
-
-			{
-				p->GradientData->ColorCount = state.ColorCount;
-
-				for (int i = 0; i < state.ColorCount; i++)
-				{
-					p->GradientData->Colors[i].Color = state.Colors[i].Color;
-					p->GradientData->Colors[i].Intensity = state.Colors[i].Intensity;
-					p->GradientData->Colors[i].Position = state.Colors[i].Position;
-				}
-
-				p->GradientData->AlphaCount = state.AlphaCount;
-
-				for (int i = 0; i < state.AlphaCount; i++)
-				{
-					p->GradientData->Alphas[i].Alpha = state.Alphas[i].Alpha;
-					p->GradientData->Alphas[i].Position = state.Alphas[i].Position;
-				}
-			}
-
-			ImGui::GetStateStorage()->SetInt(idSelectedMarkerType, static_cast<int>(tempState.selectedMarkerType));
-			ImGui::GetStateStorage()->SetInt(idSelectedIndex, static_cast<int>(tempState.selectedIndex));
-			ImGui::GetStateStorage()->SetInt(idDraggingMarkerType, static_cast<int>(tempState.draggingMarkerType));
-			ImGui::GetStateStorage()->SetInt(idDraggingIndex, static_cast<int>(tempState.draggingIndex));
-
-			ImGui::PopID();
 		}
 		else
 		{
