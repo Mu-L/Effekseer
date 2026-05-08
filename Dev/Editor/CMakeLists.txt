@@ -151,8 +151,8 @@ if(BUILD_TEST)
   # Avoid Cmake bug set_property(TARGET TestCSharp PROPERTY VS_GLOBAL_Platforms
   # "x64")
 
-  add_dependencies(TestCSharp EffekseerCore)
-  target_link_libraries(TestCSharp PRIVATE EffekseerCore)
+  add_dependencies(TestCSharp EffekseerCore EffekseerCoreGUI)
+  target_link_libraries(TestCSharp PRIVATE EffekseerCore EffekseerCoreGUI)
 
   if(MSVC)
     set_target_properties(TestCSharp PROPERTIES OUTPUT_NAME_DEBUG
