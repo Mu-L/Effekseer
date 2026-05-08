@@ -27,6 +27,32 @@ bool GetWindowMonitorInfo(HWND hwnd, MONITORINFO& monitorInfo)
 	return monitor != nullptr && ::GetMonitorInfo(monitor, &monitorInfo) != FALSE;
 }
 
+RECT GetAdjustedWorkArea(const MONITORINFO& monitorInfo)
+{
+	constexpr LONG offset = 2;
+	const RECT& monitorRect = monitorInfo.rcMonitor;
+	RECT workRect = monitorInfo.rcWork;
+
+	if (monitorRect.left < workRect.left)
+	{
+		workRect.left += offset;
+	}
+	if (workRect.right < monitorRect.right)
+	{
+		workRect.right -= offset;
+	}
+	if (monitorRect.top < workRect.top)
+	{
+		workRect.top += offset;
+	}
+	if (workRect.bottom < monitorRect.bottom)
+	{
+		workRect.bottom -= offset;
+	}
+
+	return workRect;
+}
+
 void ApplyWorkAreaToMaxInfo(HWND hwnd, MINMAXINFO* maxInfo)
 {
 	MONITORINFO monitorInfo;
@@ -36,7 +62,7 @@ void ApplyWorkAreaToMaxInfo(HWND hwnd, MINMAXINFO* maxInfo)
 	}
 
 	const RECT& monitorRect = monitorInfo.rcMonitor;
-	const RECT& workRect = monitorInfo.rcWork;
+	const RECT workRect = GetAdjustedWorkArea(monitorInfo);
 	maxInfo->ptMaxPosition.x = workRect.left - monitorRect.left;
 	maxInfo->ptMaxPosition.y = workRect.top - monitorRect.top;
 	maxInfo->ptMaxSize.x = workRect.right - workRect.left;
@@ -58,7 +84,7 @@ void FitMaximizedWindowToWorkArea(HWND hwnd)
 		return;
 	}
 
-	const RECT& workRect = monitorInfo.rcWork;
+	const RECT workRect = GetAdjustedWorkArea(monitorInfo);
 	::SetWindowPos(hwnd,
 				   nullptr,
 				   workRect.left,
