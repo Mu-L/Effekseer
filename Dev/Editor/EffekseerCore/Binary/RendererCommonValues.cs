@@ -272,7 +272,9 @@ namespace Effekseer.Binary
 			data.Add(GetUvBytes(repo.UvDistortion, advanceValue.UVDistortionTextureParam));
 
 			// uv distortion intensity
-			data.Add(advanceValue.UVDistortionTextureParam.UVDistortionIntensity.GetBytes());
+			data.Add(advanceValue.UVDistortionTextureParam.Enabled.GetValue()
+				? advanceValue.UVDistortionTextureParam.UVDistortionIntensity.GetBytes()
+				: 0.0f.GetBytes());
 
 			data.Add(GetUvBytes(repo.Blend, advanceValue.BlendTextureParams.BlendTextureParam));
 
@@ -291,7 +293,9 @@ namespace Effekseer.Binary
 			data.Add(GetUvBytes(repo.BlendUvDistortion, advanceValue.BlendTextureParams.BlendUVDistortionTextureParam));
 
 			// blend uv distortion intensity
-			data.Add(advanceValue.BlendTextureParams.BlendUVDistortionTextureParam.UVDistortionIntensity.GetBytes());
+			data.Add(advanceValue.BlendTextureParams.EnableBlendUVDistortionTexture.GetValue()
+				? advanceValue.BlendTextureParams.BlendUVDistortionTextureParam.UVDistortionIntensity.GetBytes()
+				: 0.0f.GetBytes());
 		}
 
 		private static byte[] GetUvBytes(TextureInformation texInfoL, IUvCommandValues param)
