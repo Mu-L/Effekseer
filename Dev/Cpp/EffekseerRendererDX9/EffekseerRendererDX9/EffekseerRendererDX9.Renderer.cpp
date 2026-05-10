@@ -398,7 +398,7 @@ bool RendererImplemented::BeginRendering()
 
 		GetDevice()->GetVertexShaderConstantF(
 			0, stateVertexShaderConstantF_.data(), static_cast<int>(stateVertexShaderConstantF_.size()) / 4);
-		GetDevice()->GetVertexShaderConstantF(
+		GetDevice()->GetPixelShaderConstantF(
 			0, statePixelShaderConstantF_.data(), static_cast<int>(statePixelShaderConstantF_.size()) / 4);
 
 		for (int i = 0; i < static_cast<int>(stateTextures_.size()); i++)
@@ -488,7 +488,7 @@ bool RendererImplemented::EndRendering()
 		ES_SAFE_RELEASE(stateIndexData_);
 
 		GetDevice()->SetVertexShaderConstantF(0, stateVertexShaderConstantF_.data(), (UINT)stateVertexShaderConstantF_.size() / 4);
-		GetDevice()->SetVertexShaderConstantF(0, statePixelShaderConstantF_.data(), (UINT)statePixelShaderConstantF_.size() / 4);
+		GetDevice()->SetPixelShaderConstantF(0, statePixelShaderConstantF_.data(), (UINT)statePixelShaderConstantF_.size() / 4);
 
 		for (int i = 0; i < static_cast<int>(stateTextures_.size()); i++)
 		{

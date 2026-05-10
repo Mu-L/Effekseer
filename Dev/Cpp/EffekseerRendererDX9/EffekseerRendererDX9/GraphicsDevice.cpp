@@ -304,8 +304,9 @@ bool Texture::Init(const Effekseer::Backend::TextureParameter& param, const Effe
 
 	HRESULT hr;
 	LPDIRECT3DTEXTURE9 texture = nullptr;
-	hr =
-		device->CreateTexture(param.Size[0], param.Size[1], 1, param.MipLevelCount < 1 ? D3DUSAGE_AUTOGENMIPMAP : 0, format, D3DPOOL_DEFAULT, &texture, nullptr);
+	const auto mipLevels = param.MipLevelCount == 1 ? 1 : 0;
+	const auto usage = param.MipLevelCount == 1 ? 0 : D3DUSAGE_AUTOGENMIPMAP;
+	hr = device->CreateTexture(param.Size[0], param.Size[1], mipLevels, usage, format, D3DPOOL_DEFAULT, &texture, nullptr);
 
 	if (FAILED(hr))
 	{
@@ -350,6 +351,10 @@ bool Texture::Init(const Effekseer::Backend::TextureParameter& param, const Effe
 			tempTexture->UnlockRect(0);
 		}
 		hr = device->UpdateTexture(tempTexture, texture);
+		if (SUCCEEDED(hr) && param.MipLevelCount != 1)
+		{
+			texture->GenerateMipSubLevels();
+		}
 	}
 
 	ES_SAFE_RELEASE(tempTexture);
@@ -573,7 +578,7 @@ bool VertexLayout::Generate()
 
 	vertexDeclaration_ = Effekseer::CreateUniqueReference(vertexDeclaration);
 
-	true;
+	return true;
 }
 
 bool VertexLayout::Init(const Effekseer::Backend::VertexLayoutElement* elements, int32_t elementCount)

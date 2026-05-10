@@ -171,13 +171,18 @@ void RenderState::Update(bool forced)
 			};
 
 			const uint32_t MipFilterTable[] = {
-				D3DTEXF_NONE,
-				D3DTEXF_LINEAR,
+				D3DTEXF_POINT,
+				D3DTEXF_POINT,
 			};
 
 			int32_t filter_ = (int32_t)next_.TextureFilterTypes[i];
 
-			// VTF is not supported
+			if (i < 4)
+			{
+				renderer_->GetDevice()->SetSamplerState(i + D3DVERTEXTEXTURESAMPLER0, D3DSAMP_MINFILTER, MinFilterTable[filter_]);
+				renderer_->GetDevice()->SetSamplerState(i + D3DVERTEXTEXTURESAMPLER0, D3DSAMP_MAGFILTER, MagFilterTable[filter_]);
+				renderer_->GetDevice()->SetSamplerState(i + D3DVERTEXTEXTURESAMPLER0, D3DSAMP_MIPFILTER, MipFilterTable[filter_]);
+			}
 
 			renderer_->GetDevice()->SetSamplerState(i, D3DSAMP_MINFILTER, MinFilterTable[filter_]);
 			renderer_->GetDevice()->SetSamplerState(i, D3DSAMP_MAGFILTER, MagFilterTable[filter_]);

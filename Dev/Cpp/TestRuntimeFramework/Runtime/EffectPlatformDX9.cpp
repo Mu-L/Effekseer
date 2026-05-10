@@ -63,7 +63,21 @@ void EffectPlatformDX9::CreateCheckedSurface()
 	device_->CreateOffscreenPlainSurface(initParam_.WindowSize[0], initParam_.WindowSize[1], D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &checkedSurface_, nullptr);
 	D3DLOCKED_RECT lockedRect;
 	checkedSurface_->LockRect(&lockedRect, nullptr, 0);
-	memcpy(lockedRect.pBits, checkeredPattern_.data(), checkeredPattern_.size() * sizeof(uint32_t));
+
+	for (int32_t y = 0; y < initParam_.WindowSize[1]; y++)
+	{
+		auto dst = static_cast<uint8_t*>(lockedRect.pBits) + lockedRect.Pitch * y;
+		auto src = reinterpret_cast<const uint8_t*>(checkeredPattern_.data() + initParam_.WindowSize[0] * y);
+
+		for (int32_t x = 0; x < initParam_.WindowSize[0]; x++)
+		{
+			dst[x * 4 + 0] = src[x * 4 + 2];
+			dst[x * 4 + 1] = src[x * 4 + 1];
+			dst[x * 4 + 2] = src[x * 4 + 0];
+			dst[x * 4 + 3] = src[x * 4 + 3];
+		}
+	}
+
 	checkedSurface_->UnlockRect();
 }
 
