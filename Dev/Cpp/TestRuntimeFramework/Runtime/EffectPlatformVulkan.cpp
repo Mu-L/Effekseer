@@ -115,10 +115,11 @@ public:
 
 	virtual bool OnDistorting(EffekseerRenderer::Renderer* renderer) override
 	{
+		platform_->UpdateBackgroundTextureForDistortion();
 
 		if (texture_ == nullptr)
 		{
-			auto tex = (LLGI::TextureVulkan*)(platform_->GetCheckedTexture());
+			auto tex = (LLGI::TextureVulkan*)(platform_->GetBackgroundTexture());
 			EffekseerRendererVulkan::VulkanImageInfo info;
 			info.image = static_cast<VkImage>(tex->GetImage());
 			info.format = static_cast<VkFormat>(tex->GetVulkanFormat());
@@ -208,6 +209,8 @@ void EffectPlatformVulkan::InitializeDevice(const EffectPlatformInitializingPara
 
 void EffectPlatformVulkan::DestroyDevice()
 {
+	ES_SAFE_RELEASE(backgroundTexture_);
+
 	EffectPlatformLLGI::DestroyDevice();
 }
 
@@ -228,7 +231,26 @@ void EffectPlatformVulkan::EndRendering()
 	EffectPlatformLLGI::EndRendering();
 }
 
-LLGI::Texture* EffectPlatformVulkan::GetCheckedTexture() const
+LLGI::Texture* EffectPlatformVulkan::GetBackgroundTexture()
 {
-	return checkTexture_;
+	if (backgroundTexture_ == nullptr)
+	{
+		LLGI::TextureParameter param;
+		param.Size = LLGI::Vec3I(initParam_.WindowSize[0], initParam_.WindowSize[1], 1);
+		backgroundTexture_ = graphics_->CreateTexture(param);
+	}
+
+	return backgroundTexture_;
+}
+
+void EffectPlatformVulkan::UpdateBackgroundTextureForDistortion()
+{
+	auto background = GetBackgroundTexture();
+
+	commandList_->EndRenderPass();
+	commandList_->CopyTexture(colorBuffer_, background);
+
+	renderPass_->SetIsColorCleared(false);
+	renderPass_->SetIsDepthCleared(false);
+	commandList_->BeginRenderPass(renderPass_);
 }

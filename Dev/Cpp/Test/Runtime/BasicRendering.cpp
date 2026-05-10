@@ -277,5 +277,13 @@ void BasicRuntimeTest()
 #endif
 }
 
+void BasicRuntimeTestGL()
+{
+	EffectPlatformInitializingParameter param;
+	RunBasicRuntimeTestOnPlatform<EffectPlatformGL>(param, "_GL");
+}
+
 TestRegister Runtime_BasicRuntimeTest("Runtime.BasicRuntimeTest", []() -> void
 									  { BasicRuntimeTest(); });
+TestRegister Runtime_BasicRuntimeTestGL("Runtime.BasicRuntimeTestGL", []() -> void
+										{ BasicRuntimeTestGL(); });

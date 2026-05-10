@@ -1158,8 +1158,8 @@ uniform vec4 customData2s[_INSTANCE_COUNT_];
 	}
 
 	// custom data
-	int32_t layoutOffset = 6;
-	int32_t pvLayoutOffset = 7;
+	int32_t layoutOffset = 7;
+	int32_t pvLayoutOffset = 8;
 
 	if (materialFile->GetCustomData1Count() > 0)
 	{

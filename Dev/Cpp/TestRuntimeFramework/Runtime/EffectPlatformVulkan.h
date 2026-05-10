@@ -5,6 +5,8 @@
 
 class EffectPlatformVulkan final : public EffectPlatformLLGI
 {
+	LLGI::Texture* backgroundTexture_ = nullptr;
+
 protected:
 	void CreateShaders() override;
 	EffekseerRenderer::RendererRef CreateRenderer() override;
@@ -22,5 +24,6 @@ public:
 	void BeginRendering() override;
 	void EndRendering() override;
 
-	LLGI::Texture* GetCheckedTexture() const;
+	LLGI::Texture* GetBackgroundTexture();
+	void UpdateBackgroundTextureForDistortion();
 };

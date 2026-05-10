@@ -70,9 +70,11 @@ public:
 
 	virtual bool OnDistorting(EffekseerRenderer::Renderer* renderer) override
 	{
+		platform_->UpdateBackgroundTextureForDistortion();
+
 		if (texture_ == nullptr)
 		{
-			auto tex = (LLGI::TextureDX12*)(platform_->GetCheckedTexture());
+			auto tex = (LLGI::TextureDX12*)(platform_->GetBackgroundTexture());
 			texture_ = EffekseerRendererDX12::CreateTexture(renderer->GetGraphicsDevice(), tex->Get());
 		}
 
@@ -150,6 +152,8 @@ void EffectPlatformDX12::InitializeDevice(const EffectPlatformInitializingParame
 
 void EffectPlatformDX12::DestroyDevice()
 {
+	ES_SAFE_RELEASE(backgroundTexture_);
+
 	EffectPlatformLLGI::DestroyDevice();
 }
 
@@ -170,7 +174,26 @@ void EffectPlatformDX12::EndRendering()
 	EffectPlatformLLGI::EndRendering();
 }
 
-LLGI::Texture* EffectPlatformDX12::GetCheckedTexture() const
+LLGI::Texture* EffectPlatformDX12::GetBackgroundTexture()
 {
-	return checkTexture_;
+	if (backgroundTexture_ == nullptr)
+	{
+		LLGI::TextureParameter param;
+		param.Size = LLGI::Vec3I(initParam_.WindowSize[0], initParam_.WindowSize[1], 1);
+		backgroundTexture_ = graphics_->CreateTexture(param);
+	}
+
+	return backgroundTexture_;
+}
+
+void EffectPlatformDX12::UpdateBackgroundTextureForDistortion()
+{
+	auto background = GetBackgroundTexture();
+
+	commandList_->EndRenderPass();
+	commandList_->CopyTexture(colorBuffer_, background);
+
+	renderPass_->SetIsColorCleared(false);
+	renderPass_->SetIsDepthCleared(false);
+	commandList_->BeginRenderPass(renderPass_);
 }
