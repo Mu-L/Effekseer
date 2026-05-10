@@ -1,7 +1,6 @@
 #include "EffectPlatformWebGPU.h"
 #include "../../3rdParty/LLGI/src/WebGPU/LLGI.CommandListWebGPU.h"
 #include "../../3rdParty/LLGI/src/WebGPU/LLGI.CompilerWebGPU.h"
-#include "../../3rdParty/LLGI/src/WebGPU/LLGI.GraphicsWebGPU.h"
 #include "../../3rdParty/LLGI/src/WebGPU/LLGI.TextureWebGPU.h"
 #include "../../3rdParty/LLGI/src/LLGI.CommandList.h"
 #include <EffekseerRendererLLGI/GraphicsDevice.h>
@@ -112,15 +111,13 @@ void EffectPlatformWebGPU::CreateShaders()
 
 EffekseerRenderer::RendererRef EffectPlatformWebGPU::CreateRenderer()
 {
-	auto g = static_cast<LLGI::GraphicsWebGPU*>(graphics_);
-
 	::EffekseerRendererWebGPU::RenderPassInformation renderPassInfo;
 	renderPassInfo.DoesPresentToScreen = false;
 	renderPassInfo.RenderTextureCount = 1;
 	renderPassInfo.RenderTextureFormats[0] = wgpu::TextureFormat::RGBA8Unorm;
 	renderPassInfo.DepthFormat = wgpu::TextureFormat::Depth32Float;
 
-	auto graphicsDevice = ::EffekseerRendererWebGPU::CreateGraphicsDevice(g->GetDevice());
+	auto graphicsDevice = Effekseer::MakeRefPtr<EffekseerRendererLLGI::Backend::GraphicsDevice>(graphics_);
 	auto renderer = ::EffekseerRendererWebGPU::Create(graphicsDevice, renderPassInfo, initParam_.SpriteCount);
 
 	renderer->SetDistortingCallback(new DistortingCallbackWebGPU(this));

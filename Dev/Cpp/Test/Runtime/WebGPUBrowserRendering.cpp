@@ -28,7 +28,7 @@ size_t CountDifferentPixels(const std::vector<uint8_t>& a, const std::vector<uin
 	return count;
 }
 
-void WebGPUBrowserSimpleEffectPresentationTest()
+void WebGPUBrowserEffectPresentationTest(const char16_t* effectPath, int frameCount, size_t minimumChangedPixels)
 {
 	EffectPlatformInitializingParameter param;
 	param.VSync = false;
@@ -41,8 +41,8 @@ void WebGPUBrowserSimpleEffectPresentationTest()
 	const auto background = platform->CaptureScreenPixels();
 	EXPECT_TRUE(background.size() == static_cast<size_t>(param.WindowSize[0] * param.WindowSize[1] * 4));
 
-	platform->Play(u"/TestData/Effects/10/SimpleLaser.efk");
-	for (int frame = 0; frame < 30; frame++)
+	platform->Play(effectPath);
+	for (int frame = 0; frame < frameCount; frame++)
 	{
 		EXPECT_TRUE(platform->Update());
 	}
@@ -51,13 +51,23 @@ void WebGPUBrowserSimpleEffectPresentationTest()
 	EXPECT_TRUE(rendered.size() == background.size());
 
 	const auto changedPixels = CountDifferentPixels(background, rendered);
-	if (changedPixels <= 100)
+	if (changedPixels <= minimumChangedPixels)
 	{
 		std::cout << "Changed pixels were too few: " << changedPixels << std::endl;
 	}
-	EXPECT_TRUE(changedPixels > 100);
+	EXPECT_TRUE(changedPixels > minimumChangedPixels);
 
 	platform->Terminate();
+}
+
+void WebGPUBrowserSimpleEffectPresentationTest()
+{
+	WebGPUBrowserEffectPresentationTest(u"/TestData/Effects/10/SimpleLaser.efk", 30, 100);
+}
+
+void WebGPUBrowserDistortionPresentationTest()
+{
+	WebGPUBrowserEffectPresentationTest(u"/TestData/Effects/10/Distortions1.efk", 30, 100);
 }
 
 } // namespace
@@ -65,5 +75,9 @@ void WebGPUBrowserSimpleEffectPresentationTest()
 TestRegister Runtime_WebGPUBrowserSimpleEffectPresentationTest(
 	"Runtime.WebGPUBrowserSimpleEffectPresentation",
 	[]() -> void { WebGPUBrowserSimpleEffectPresentationTest(); });
+
+TestRegister Runtime_WebGPUBrowserDistortionPresentationTest(
+	"Runtime.WebGPUBrowserDistortionPresentation",
+	[]() -> void { WebGPUBrowserDistortionPresentationTest(); });
 
 #endif

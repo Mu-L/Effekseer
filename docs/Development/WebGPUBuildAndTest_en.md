@@ -1,8 +1,8 @@
 # WebGPU Build and Test
 
-This document describes how to build and test Effekseer's WebGPU backend.
+This document describes the current local build and test flow for Effekseer's WebGPU backend.
 
-## Native WebGPU Runtime Test
+## Native Runtime
 
 Configure a native WebGPU runtime test build:
 
@@ -16,30 +16,33 @@ Build `TestCpp`:
 cmake --build build_webgpu_runtime_test --target TestCpp --config Debug
 ```
 
-Run a small WebGPU smoke test:
+Run a minimal WebGPU update smoke test:
 
 ```powershell
 build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUUpdateSimpleTest
 ```
 
-Run the basic WebGPU rendering test:
+Run the focused native WebGPU checks:
+
+```powershell
+build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUModelColorTest
+build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUScreenshotSmokeTest
+build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUTexturelessDistortionVisibilityTest
+build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUMaterialUVTest
+build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUCompiledMaterialTest
+```
+
+`Runtime.WebGPUTexturelessDistortionVisibilityTest` uses a non-periodic gradient background and verifies that the textureless upper half of `Distortions1.efk` changes the rendered WebGPU frame. This catches regressions that can be hidden by the default checkered background.
+
+Run the broader native WebGPU runtime test:
 
 ```powershell
 build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.BasicRuntimeTestWebGPU
 ```
 
-Run focused WebGPU tests:
+## Browser Runtime
 
-```powershell
-build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUModelColorTest
-build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUScreenshotSmokeTest
-build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUMaterialUVTest
-build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUCompiledMaterialTest
-```
-
-## Browser WebGPU Test
-
-The browser test requires Emscripten.
+The browser WebGPU test requires Emscripten.
 
 Activate emsdk:
 
@@ -60,17 +63,33 @@ Build the browser test target:
 cmake --build build_effekseer_webgpu_browser --target TestCpp
 ```
 
-Run the browser WebGPU effect presentation test:
+Run the browser WebGPU tests:
 
 ```powershell
 ctest --test-dir build_effekseer_webgpu_browser -R Effekseer_WebGPU_Browser --output-on-failure
 ```
 
-This test launches Chrome or Edge in headless mode, initializes browser WebGPU,
-renders `TestData/Effects/10/SimpleLaser.efk`, reads back the presented frame,
-and verifies that the rendered frame differs from the background-only frame.
+The browser test initializes a real browser WebGPU device through Emscripten, renders effects, reads back the presented frame, and verifies that rendering changed the background-only frame. The suite currently covers:
 
-## Browser Effect Player
+- `Runtime.WebGPUBrowserSimpleEffectPresentation`
+- `Runtime.WebGPUBrowserDistortionPresentation`
+
+If headless Chrome or Edge exits before WebGPU test execution, rerun with non-headless Edge:
+
+```powershell
+$env:CHROME_PATH = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+$env:LLGI_WEBGPU_HEADLESS = "0"
+ctest --test-dir build_effekseer_webgpu_browser -R Effekseer_WebGPU_Browser --output-on-failure
+```
+
+If the browser is installed elsewhere, set `CHROME_PATH` or `EDGE_PATH` before running the test:
+
+```powershell
+$env:CHROME_PATH = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+$env:EDGE_PATH = "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+```
+
+## Browser Player
 
 Build the browser player:
 
@@ -78,28 +97,27 @@ Build the browser player:
 cmake --build build_effekseer_webgpu_browser --target EffekseerWebGPUBrowserPlayer
 ```
 
-Open the default effect in a browser:
+Open an effect in the browser player:
 
 ```powershell
 node Dev\Cpp\Test\Runtime\browser\run_effekseer_webgpu_player.mjs build_effekseer_webgpu_browser\Dev\Cpp\Test\EffekseerWebGPUBrowserPlayer.html /TestData/Effects/10/SimpleLaser.efk --width=640 --height=360 --loopFrame=180
 ```
 
-Open another existing effect by changing the effect path:
+Try a distortion effect:
+
+```powershell
+node Dev\Cpp\Test\Runtime\browser\run_effekseer_webgpu_player.mjs build_effekseer_webgpu_browser\Dev\Cpp\Test\EffekseerWebGPUBrowserPlayer.html /TestData/Effects/10/Distortions1.efk --width=640 --height=360 --loopFrame=180
+```
+
+Try a model effect:
 
 ```powershell
 node Dev\Cpp\Test\Runtime\browser\run_effekseer_webgpu_player.mjs build_effekseer_webgpu_browser\Dev\Cpp\Test\EffekseerWebGPUBrowserPlayer.html /TestData/Effects/14/Model_Parameters1.efk --width=640 --height=360 --loopFrame=180
 ```
 
-The player script serves the generated files over localhost and opens a
-WebGPU-capable Chrome or Edge instance. If the browser is installed in a custom
-location, set one of these environment variables before running the script:
+The player script serves the generated files over localhost and opens a WebGPU-capable Chrome or Edge instance.
 
-```powershell
-$env:CHROME_PATH = "C:\Program Files\Google\Chrome\Application\chrome.exe"
-$env:EDGE_PATH = "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
-```
-
-## LLGI WebGPU Test
+## LLGI WebGPU
 
 Configure LLGI's WebGPU test build:
 
@@ -113,10 +131,16 @@ Build `LLGI_Test`:
 cmake --build Dev/Cpp/3rdParty/LLGI/build-webgpu-test --target LLGI_Test --config Debug
 ```
 
-Run LLGI WebGPU tests:
+Run all LLGI WebGPU tests:
 
 ```powershell
 Dev\Cpp\3rdParty\LLGI\build-webgpu-test\src_test\Debug\LLGI_Test.exe --webgpu
+```
+
+Run the focused triangle smoke test:
+
+```powershell
+Dev\Cpp\3rdParty\LLGI\build-webgpu-test\src_test\Debug\LLGI_Test.exe --webgpu --filter=SimpleRender.BasicTriangle
 ```
 
 ## Shader Regeneration
@@ -140,9 +164,21 @@ Generated WebGPU shader files are stored under:
 - `Dev/Cpp/EffekseerRendererWebGPU/EffekseerRendererWebGPU/Shader`
 - `Dev/Cpp/EffekseerRendererWebGPU/EffekseerRendererWebGPU/ShaderHeader`
 
+## Sanity Checks
+
+Before handoff, run:
+
+```powershell
+git diff --check
+git -C Dev/Cpp/3rdParty/LLGI diff --check
+```
+
+Line-ending warnings can appear for existing browser helper files. Treat whitespace errors as blockers, but line-ending warnings alone are not necessarily WebGPU implementation failures.
+
 ## Notes
 
 - Browser WebGPU tests must be served from localhost or HTTPS.
 - The browser flow uses the preinitialized WebGPU device provided by Emscripten.
-- `BUILD_WEBGPU_BROWSER_TEST=ON` intentionally skips native-only test dependencies such as GLFW, OpenGL, OpenAL, and screenshot tools.
-- Browser playback currently uses precompiled fixed WebGPU shaders and existing effect data; runtime WebGPU material compilation is excluded from this browser test target.
+- `BUILD_WEBGPU_BROWSER_TEST=ON` intentionally skips native-only test dependencies such as GLFW, OpenGL, OpenAL, Vulkan/glslang compiler projects, and screenshot tools.
+- Browser playback currently uses precompiled fixed WebGPU shaders and existing effect data. Runtime WebGPU material compilation is excluded from this browser test target.
+- Generated screenshots such as `Smoke_*.png`, `Model_Parameters1_*_ColorCheck.png`, and `TexturelessDistortion_NonPeriodicGradient_WebGPU.png` are local verification artifacts unless a visual-reference update is explicitly intended.

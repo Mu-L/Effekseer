@@ -14,6 +14,7 @@
 #include <windows.h>
 #endif
 
+#include <cstdlib>
 #include <filesystem>
 
 namespace
@@ -144,6 +145,57 @@ void WebGPUScreenshotSmokeTest()
 		auto platform = std::make_shared<EffectPlatformWebGPU>();
 		run(platform.get(), "_WebGPU_Smoke");
 	}
+}
+
+int32_t CountChangedPixels(const std::vector<uint8_t>& before, const std::vector<uint8_t>& after, int32_t width, int32_t yBegin, int32_t yEnd)
+{
+	EXPECT_TRUE(before.size() == after.size());
+
+	int32_t changed = 0;
+	for (int32_t y = yBegin; y < yEnd; y++)
+	{
+		for (int32_t x = 0; x < width; x++)
+		{
+			const auto offset = static_cast<size_t>((y * width + x) * 4);
+			const auto delta =
+				std::abs(static_cast<int32_t>(before[offset + 0]) - static_cast<int32_t>(after[offset + 0])) +
+				std::abs(static_cast<int32_t>(before[offset + 1]) - static_cast<int32_t>(after[offset + 1])) +
+				std::abs(static_cast<int32_t>(before[offset + 2]) - static_cast<int32_t>(after[offset + 2]));
+			if (delta > 12)
+			{
+				changed++;
+			}
+		}
+	}
+
+	return changed;
+}
+
+void WebGPUTexturelessDistortionVisibilityTest()
+{
+	EffectPlatformInitializingParameter param;
+	param.BackgroundPattern = BackgroundPatternType::NonPeriodicGradient;
+
+	auto platform = std::make_shared<EffectPlatformWebGPU>();
+	platform->Initialize(param);
+
+	EXPECT_TRUE(platform->Draw());
+	const auto background = platform->CaptureScreenPixels();
+
+	srand(0);
+	platform->Play((GetDirectoryPathAsU16(__FILE__) + u"../../../../TestData/Effects/10/Distortions1.efk").c_str());
+	for (size_t i = 0; i < 30; i++)
+	{
+		EXPECT_TRUE(platform->Update());
+	}
+
+	const auto distorted = platform->CaptureScreenPixels();
+	platform->TakeScreenshot("TexturelessDistortion_NonPeriodicGradient_WebGPU.png");
+	platform->Terminate();
+
+	const auto changedPixels = CountChangedPixels(background, distorted, param.WindowSize[0], 0, param.WindowSize[1] / 2);
+	printf("TexturelessDistortion_NonPeriodicGradient changed pixels: %d\n", changedPixels);
+	EXPECT_TRUE(changedPixels > 250);
 }
 
 void WebGPUMaterialUVTest()
@@ -292,6 +344,8 @@ TestRegister Runtime_WebGPUModelColorTest("Runtime.WebGPUModelColorTest", []() -
 										  { WebGPUModelColorTest(); });
 TestRegister Runtime_WebGPUScreenshotSmokeTest("Runtime.WebGPUScreenshotSmokeTest", []() -> void
 											  { WebGPUScreenshotSmokeTest(); });
+TestRegister Runtime_WebGPUTexturelessDistortionVisibilityTest("Runtime.WebGPUTexturelessDistortionVisibilityTest", []() -> void
+															   { WebGPUTexturelessDistortionVisibilityTest(); });
 TestRegister Runtime_WebGPUMaterialUVTest("Runtime.WebGPUMaterialUVTest", []() -> void
 										  { WebGPUMaterialUVTest(); });
 TestRegister Runtime_WebGPUCompiledMaterialTest("Runtime.WebGPUCompiledMaterialTest", []() -> void

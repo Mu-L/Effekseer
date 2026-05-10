@@ -2,28 +2,44 @@
 #include "EffectPlatform.h"
 #include <assert.h>
 
-void EffectPlatform::CreateCheckeredPattern(int width, int height, uint32_t* pixels)
+void EffectPlatform::CreateBackgroundPattern(int width, int height, uint32_t* pixels)
 {
+	if (initParam_.BackgroundPattern == BackgroundPatternType::NonPeriodicGradient)
 	{
-		const uint32_t color[2] = {0xFF204020, 0xFF80A080};
-
-		for (int y = 0; y < height / 2; y++)
+		for (int y = 0; y < height; y++)
 		{
 			for (int x = 0; x < width; x++)
 			{
-				*pixels++ = color[(x / 20 % 2) ^ (y / 20 % 2)];
+				const auto r = static_cast<uint32_t>(24 + (x * 83) / width + (y * 29) / height);
+				const auto g = static_cast<uint32_t>(40 + (x * 37) / width + (y * 71) / height);
+				const auto b = static_cast<uint32_t>(32 + (x * 19) / width + (y * 47) / height);
+				*pixels++ = 0xFF000000 | (b << 16) | (g << 8) | r;
 			}
 		}
 	}
-
+	else
 	{
-		const uint32_t color[2] = {0xFF402020, 0xFFA08080};
-
-		for (int y = height / 2; y < height; y++)
 		{
-			for (int x = 0; x < width; x++)
+			const uint32_t color[2] = {0xFF204020, 0xFF80A080};
+
+			for (int y = 0; y < height / 2; y++)
 			{
-				*pixels++ = color[(x / 20 % 2) ^ (y / 20 % 2)];
+				for (int x = 0; x < width; x++)
+				{
+					*pixels++ = color[(x / 20 % 2) ^ (y / 20 % 2)];
+				}
+			}
+		}
+
+		{
+			const uint32_t color[2] = {0xFF402020, 0xFFA08080};
+
+			for (int y = height / 2; y < height; y++)
+			{
+				for (int x = 0; x < width; x++)
+				{
+					*pixels++ = color[(x / 20 % 2) ^ (y / 20 % 2)];
+				}
 			}
 		}
 	}
@@ -66,7 +82,7 @@ void EffectPlatform::Initialize(const EffectPlatformInitializingParameter& param
 	initParam_ = param;
 
 	checkeredPattern_.resize(initParam_.WindowSize[0] * initParam_.WindowSize[1]);
-	CreateCheckeredPattern(initParam_.WindowSize[0], initParam_.WindowSize[1], checkeredPattern_.data());
+	CreateBackgroundPattern(initParam_.WindowSize[0], initParam_.WindowSize[1], checkeredPattern_.data());
 
 	InitializeWindow();
 

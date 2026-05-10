@@ -1,8 +1,8 @@
 # WebGPU のビルドとテスト
 
-このドキュメントでは、Effekseer の WebGPU バックエンドをビルドしてテストする方法を説明します。
+このドキュメントでは、Effekseer の WebGPU バックエンドをローカルでビルドしてテストする最新手順を説明します。
 
-## ネイティブ WebGPU ランタイムテスト
+## ネイティブランタイム
 
 ネイティブ WebGPU ランタイムテスト用のビルドを構成します。
 
@@ -16,30 +16,33 @@ cmake -S . -B build_webgpu_runtime_test -DBUILD_TEST=ON -DBUILD_WEBGPU=ON
 cmake --build build_webgpu_runtime_test --target TestCpp --config Debug
 ```
 
-小さな WebGPU スモークテストを実行します。
+最小の WebGPU 更新スモークテストを実行します。
 
 ```powershell
 build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUUpdateSimpleTest
 ```
 
-基本的な WebGPU 描画テストを実行します。
+重点的なネイティブ WebGPU テストを実行します。
+
+```powershell
+build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUModelColorTest
+build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUScreenshotSmokeTest
+build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUTexturelessDistortionVisibilityTest
+build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUMaterialUVTest
+build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUCompiledMaterialTest
+```
+
+`Runtime.WebGPUTexturelessDistortionVisibilityTest` は非周期グラデーション背景を使い、`Distortions1.efk` の上半分にあるテクスチャなし歪みが WebGPU の描画結果を変化させることを確認します。通常のチェック柄背景では見えにくい回帰を検出するためのテストです。
+
+より広いネイティブ WebGPU ランタイムテストを実行します。
 
 ```powershell
 build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.BasicRuntimeTestWebGPU
 ```
 
-個別の WebGPU テストを実行します。
+## ブラウザランタイム
 
-```powershell
-build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUModelColorTest
-build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUScreenshotSmokeTest
-build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUMaterialUVTest
-build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.WebGPUCompiledMaterialTest
-```
-
-## ブラウザ WebGPU テスト
-
-ブラウザテストには Emscripten が必要です。
+ブラウザ WebGPU テストには Emscripten が必要です。
 
 emsdk を有効化します。
 
@@ -60,17 +63,33 @@ emcmake cmake -S . -B build_effekseer_webgpu_browser -DBUILD_TEST=ON -DBUILD_WEB
 cmake --build build_effekseer_webgpu_browser --target TestCpp
 ```
 
-ブラウザ WebGPU のエフェクト表示テストを実行します。
+ブラウザ WebGPU テストを実行します。
 
 ```powershell
 ctest --test-dir build_effekseer_webgpu_browser -R Effekseer_WebGPU_Browser --output-on-failure
 ```
 
-このテストは Chrome または Edge をヘッドレスモードで起動し、ブラウザ WebGPU を初期化します。
-その後、`TestData/Effects/10/SimpleLaser.efk` を描画し、表示されたフレームを readback して、
-背景のみのフレームとの差分があることを確認します。
+このテストは Emscripten 経由で実ブラウザの WebGPU デバイスを初期化し、エフェクトを描画して、表示されたフレームを readback します。その後、背景のみのフレームとの差分があることを確認します。現在のブラウザテストは次を含みます。
 
-## ブラウザエフェクトプレイヤー
+- `Runtime.WebGPUBrowserSimpleEffectPresentation`
+- `Runtime.WebGPUBrowserDistortionPresentation`
+
+ヘッドレス Chrome または Edge が WebGPU テスト実行前に終了する場合は、非ヘッドレス Edge で再実行します。
+
+```powershell
+$env:CHROME_PATH = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+$env:LLGI_WEBGPU_HEADLESS = "0"
+ctest --test-dir build_effekseer_webgpu_browser -R Effekseer_WebGPU_Browser --output-on-failure
+```
+
+ブラウザが通常とは異なる場所にインストールされている場合は、実行前に `CHROME_PATH` または `EDGE_PATH` を設定してください。
+
+```powershell
+$env:CHROME_PATH = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+$env:EDGE_PATH = "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+```
+
+## ブラウザプレイヤー
 
 ブラウザプレイヤーをビルドします。
 
@@ -78,27 +97,27 @@ ctest --test-dir build_effekseer_webgpu_browser -R Effekseer_WebGPU_Browser --ou
 cmake --build build_effekseer_webgpu_browser --target EffekseerWebGPUBrowserPlayer
 ```
 
-デフォルトのエフェクトをブラウザで開きます。
+ブラウザプレイヤーでエフェクトを開きます。
 
 ```powershell
 node Dev\Cpp\Test\Runtime\browser\run_effekseer_webgpu_player.mjs build_effekseer_webgpu_browser\Dev\Cpp\Test\EffekseerWebGPUBrowserPlayer.html /TestData/Effects/10/SimpleLaser.efk --width=640 --height=360 --loopFrame=180
 ```
 
-別の既存エフェクトを開く場合は、エフェクトパスを変更します。
+歪みエフェクトを開く例です。
+
+```powershell
+node Dev\Cpp\Test\Runtime\browser\run_effekseer_webgpu_player.mjs build_effekseer_webgpu_browser\Dev\Cpp\Test\EffekseerWebGPUBrowserPlayer.html /TestData/Effects/10/Distortions1.efk --width=640 --height=360 --loopFrame=180
+```
+
+モデルエフェクトを開く例です。
 
 ```powershell
 node Dev\Cpp\Test\Runtime\browser\run_effekseer_webgpu_player.mjs build_effekseer_webgpu_browser\Dev\Cpp\Test\EffekseerWebGPUBrowserPlayer.html /TestData/Effects/14/Model_Parameters1.efk --width=640 --height=360 --loopFrame=180
 ```
 
 プレイヤースクリプトは生成されたファイルを localhost で配信し、WebGPU に対応した Chrome または Edge を開きます。
-ブラウザが通常とは異なる場所にインストールされている場合は、実行前に次の環境変数のどちらかを設定してください。
 
-```powershell
-$env:CHROME_PATH = "C:\Program Files\Google\Chrome\Application\chrome.exe"
-$env:EDGE_PATH = "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
-```
-
-## LLGI WebGPU テスト
+## LLGI WebGPU
 
 LLGI の WebGPU テスト用ビルドを構成します。
 
@@ -112,10 +131,16 @@ cmake -S Dev/Cpp/3rdParty/LLGI -B Dev/Cpp/3rdParty/LLGI/build-webgpu-test -DBUIL
 cmake --build Dev/Cpp/3rdParty/LLGI/build-webgpu-test --target LLGI_Test --config Debug
 ```
 
-LLGI の WebGPU テストを実行します。
+LLGI の WebGPU テストをすべて実行します。
 
 ```powershell
 Dev\Cpp\3rdParty\LLGI\build-webgpu-test\src_test\Debug\LLGI_Test.exe --webgpu
+```
+
+三角形の重点スモークテストを実行します。
+
+```powershell
+Dev\Cpp\3rdParty\LLGI\build-webgpu-test\src_test\Debug\LLGI_Test.exe --webgpu --filter=SimpleRender.BasicTriangle
 ```
 
 ## シェーダー再生成
@@ -139,9 +164,21 @@ python Dev\Cpp\EffekseerRendererWebGPU\EffekseerRendererWebGPU\compile.py
 - `Dev/Cpp/EffekseerRendererWebGPU/EffekseerRendererWebGPU/Shader`
 - `Dev/Cpp/EffekseerRendererWebGPU/EffekseerRendererWebGPU/ShaderHeader`
 
+## 確認項目
+
+引き渡し前に次を実行します。
+
+```powershell
+git diff --check
+git -C Dev/Cpp/3rdParty/LLGI diff --check
+```
+
+既存のブラウザヘルパーファイルでは行末警告が出る場合があります。空白エラーは修正対象ですが、行末警告だけであれば WebGPU 実装の失敗とは限りません。
+
 ## 注意点
 
 - ブラウザ WebGPU テストは localhost または HTTPS から配信する必要があります。
 - ブラウザ向けの処理では、Emscripten が提供する事前初期化済み WebGPU デバイスを使用します。
-- `BUILD_WEBGPU_BROWSER_TEST=ON` では、GLFW、OpenGL、OpenAL、スクリーンショットツールなどのネイティブ専用テスト依存を意図的に除外します。
+- `BUILD_WEBGPU_BROWSER_TEST=ON` では、GLFW、OpenGL、OpenAL、Vulkan/glslang compiler projects、スクリーンショットツールなどのネイティブ専用テスト依存を意図的に除外します。
 - ブラウザ再生は、事前コンパイル済みの固定 WebGPU シェーダーと既存エフェクトデータを使用します。このブラウザテストターゲットでは、ランタイム WebGPU マテリアルコンパイルは除外されています。
+- `Smoke_*.png`、`Model_Parameters1_*_ColorCheck.png`、`TexturelessDistortion_NonPeriodicGradient_WebGPU.png` などの生成スクリーンショットは、明示的にビジュアルリファレンスを更新する場合を除き、ローカル検証用の成果物です。

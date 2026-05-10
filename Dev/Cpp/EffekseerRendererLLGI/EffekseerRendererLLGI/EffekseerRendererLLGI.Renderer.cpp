@@ -639,6 +639,12 @@ int32_t RendererImplemented::GetSquareMaxCount() const
 
 void RendererImplemented::SetBackgroundInternal(LLGI::Texture* background)
 {
+	if (background == nullptr)
+	{
+		EffekseerRenderer::Renderer::SetBackground(nullptr);
+		return;
+	}
+
 	if (backgroundLLGI_ == nullptr)
 	{
 		backgroundLLGI_ = graphicsDevice_->CreateTexture(background);
@@ -649,7 +655,7 @@ void RendererImplemented::SetBackgroundInternal(LLGI::Texture* background)
 		texture->Init(background);
 	}
 
-	EffekseerRenderer::Renderer::SetBackground((background) ? backgroundLLGI_ : nullptr);
+	EffekseerRenderer::Renderer::SetBackground(backgroundLLGI_);
 }
 
 EffekseerRenderer::DistortingCallback* RendererImplemented::GetDistortingCallback()

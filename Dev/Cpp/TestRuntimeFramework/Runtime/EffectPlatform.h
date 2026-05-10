@@ -7,6 +7,12 @@
 
 #include <EffekseerRendererCommon/EffekseerRenderer.Renderer.h>
 
+enum class BackgroundPatternType
+{
+	Checkered,
+	NonPeriodicGradient,
+};
+
 struct EffectPlatformInitializingParameter
 {
 	bool VSync = true;
@@ -16,6 +22,7 @@ struct EffectPlatformInitializingParameter
 	int SpriteCount = 2000;
 	::Effekseer::CoordinateSystem CoordinateSyatem = ::Effekseer::CoordinateSystem::RH;
 	std::array<int32_t, 2> WindowSize = {320, 240};
+	BackgroundPatternType BackgroundPattern = BackgroundPatternType::Checkered;
 };
 
 class EffectPlatform
@@ -29,7 +36,7 @@ private:
 	EffekseerRenderer::RendererRef renderer_ = nullptr;
 	std::vector<Effekseer::Handle> effectHandles_;
 
-	void CreateCheckeredPattern(int width, int height, uint32_t* pixels);
+	void CreateBackgroundPattern(int width, int height, uint32_t* pixels);
 
 protected:
 	bool isOpenGLMode_ = false;

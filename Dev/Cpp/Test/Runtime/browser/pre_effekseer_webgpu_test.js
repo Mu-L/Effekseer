@@ -2,6 +2,21 @@ if (typeof Module === 'undefined') {
 	var Module = {};
 }
 
+Module.__llgiTestResult = Module.llgiTestResult || null;
+Object.defineProperty(Module, 'llgiTestResult', {
+	configurable: true,
+	get: function() {
+		return Module.__llgiTestResult;
+	},
+	set: function(value) {
+		Module.__llgiTestResult = value;
+		if (typeof document !== 'undefined' && value) {
+			document.documentElement.setAttribute('data-llgi-test-status', value.status || '');
+			document.documentElement.setAttribute('data-llgi-test-message', value.message || '');
+		}
+	}
+});
+
 Module.arguments = Module.arguments || (function() {
 	var args = ['--webgpu', '--filter=Runtime.WebGPUBrowser.*'];
 	if (typeof URLSearchParams !== 'undefined' && typeof location !== 'undefined') {

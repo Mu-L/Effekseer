@@ -88,8 +88,8 @@ public:
 		D3D11_TEXTURE2D_DESC renderTextureDesc;
 		renderTexture->GetDesc(&renderTextureDesc);
 
-		if (backGroundTextureSRV == nullptr || backGroundTextureDesc.Width == renderTextureDesc.Width ||
-			backGroundTextureDesc.Height == renderTextureDesc.Height || backGroundTextureDesc.Format == renderTextureDesc.Format)
+		if (backGroundTextureSRV == nullptr || backGroundTextureDesc.Width != renderTextureDesc.Width ||
+			backGroundTextureDesc.Height != renderTextureDesc.Height || backGroundTextureDesc.Format != renderTextureDesc.Format)
 		{
 			PrepareTexture(renderTextureDesc.Width, renderTextureDesc.Height, renderTextureDesc.Format);
 		}

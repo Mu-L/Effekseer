@@ -39,13 +39,13 @@ LLGI::TextureMinMagFilter ToLLGITextureMinMagFilter(Effekseer::Backend::TextureS
 	}
 }
 
-bool CanGenerateMipMap(const Effekseer::Backend::TextureParameter& param)
+bool CanGenerateMipMap(const LLGI::TextureParameter& param)
 {
 	return param.MipLevelCount > 1 &&
 		   param.Dimension == 2 &&
-		   param.Size[2] == 1 &&
+		   param.Size.Z == 1 &&
 		   param.SampleCount == 1 &&
-		   !Effekseer::Backend::IsDepthTextureFormat(param.Format);
+		   !LLGI::IsDepthFormat(param.Format);
 }
 } // namespace
 
@@ -339,7 +339,7 @@ bool Texture::Init(const Effekseer::Backend::TextureParameter& param, const Effe
 
 	texture->Unlock();
 
-	if (CanGenerateMipMap(param))
+	if (CanGenerateMipMap(texParam))
 	{
 		graphicsDevice_->QueueMipMapGeneration(texture);
 	}
@@ -781,6 +781,11 @@ Effekseer::Backend::TextureRef GraphicsDevice::CreateTexture(uint64_t id, const 
 
 Effekseer::Backend::TextureRef GraphicsDevice::CreateTexture(LLGI::Texture* texture)
 {
+	if (texture == nullptr)
+	{
+		return nullptr;
+	}
+
 	auto ret = Effekseer::MakeRefPtr<Texture>(this);
 
 	if (!ret->Init(texture))
