@@ -20,6 +20,7 @@ struct VS_Input
 	float3 Binormal : NORMAL1;
 	float3 Tangent : NORMAL2;
     float2 UV : TEXCOORD0;
+    float2 UV2 : TEXCOORD1;
     float4 Color : NORMAL3;
     uint InstanceID : SV_InstanceID;
     uint VertexID : SV_VertexID;
@@ -28,11 +29,12 @@ struct VS_Input
 struct VS_Output
 {
 	float4 Pos : SV_POSITION;
-    float2 UV : TEXCOORD0;
-    float4 Color : COLOR0;
-	float3 WorldN : TEXCOORD1;
-	float3 WorldB : TEXCOORD2;
-	float3 WorldT : TEXCOORD3;
+	float2 UV : TEXCOORD0;
+	float2 UV2 : TEXCOORD1;
+	float4 Color : COLOR0;
+	float3 WorldN : TEXCOORD2;
+	float3 WorldB : TEXCOORD3;
+	float3 WorldT : TEXCOORD4;
 };
 
 StructuredBuffer<ParticleData> Particles : register(t0);
@@ -111,6 +113,7 @@ VS_Output main(const VS_Input input)
     if (particle.FlagBits & 0x01) {
         float3 position = input.Pos;
         float2 uv = input.UV;
+        float2 uv2 = input.UV2;
         float4 color = input.Color;
 
         if (paramData.ShapeType == 0) {
@@ -126,6 +129,7 @@ VS_Output main(const VS_Input input)
         
         output.Pos = mul(constants.ProjMat, mul(constants.CameraMat, float4(position, 1.0f)));
         output.UV = uv;
+        output.UV2 = uv2;
         output.Color = color;
 
         if (paramData.MaterialType == 1) {
@@ -137,6 +141,7 @@ VS_Output main(const VS_Input input)
     else {
         output.Pos = float4(0.0f, 0.0f, 0.0f, 0.0f);
         output.UV = float2(0.0f, 0.0f);
+        output.UV2 = float2(0.0f, 0.0f);
         output.Color = float4(0.0f, 0.0f, 0.0f, 0.0f);
         
         if (paramData.MaterialType == 1) {

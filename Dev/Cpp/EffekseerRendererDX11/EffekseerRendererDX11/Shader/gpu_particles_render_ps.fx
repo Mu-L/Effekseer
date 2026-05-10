@@ -17,16 +17,18 @@ SamplerState NormalSamp : register(s3);
 struct PS_Input
 {
 	float4 Pos : SV_POSITION;
-    float2 UV : TEXCOORD0;
-    float4 Color : COLOR0;
-	float3 WorldN : TEXCOORD1;
-	float3 WorldB : TEXCOORD2;
-	float3 WorldT : TEXCOORD3;
+	float2 UV : TEXCOORD0;
+	float2 UV2 : TEXCOORD1;
+	float4 Color : COLOR0;
+	float3 WorldN : TEXCOORD2;
+	float3 WorldB : TEXCOORD3;
+	float3 WorldT : TEXCOORD4;
 };
 
 float4 main(const PS_Input input) : SV_Target
 {
-    float4 color = input.Color * ColorTex.Sample(ColorSamp, input.UV);
+	float4 color = input.Color * ColorTex.Sample(ColorSamp, input.UV);
+	float2 uv2 = input.UV2;
 
 	if (paramData.MaterialType == 1) {
 		float3 texNormal = NormalTex.Sample(NormalSamp, input.UV).xyz * 2.0f - 1.0f;
@@ -35,5 +37,6 @@ float4 main(const PS_Input input) : SV_Target
 		color.xyz *= constants.LightColor.xyz * diffuse + constants.LightAmbient.xyz;
 	}
 
-    return color;
+	color.xy += uv2 * (paramData.FadeIn - paramData.FadeIn);
+	return color;
 }

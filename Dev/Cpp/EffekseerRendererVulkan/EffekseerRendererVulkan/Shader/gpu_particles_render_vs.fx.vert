@@ -29,6 +29,7 @@ struct VS_Output
 {
     vec4 Pos;
     vec2 UV;
+    vec2 UV2;
     vec4 Color;
     vec3 WorldN;
     vec3 WorldB;
@@ -154,10 +155,11 @@ layout(location = 4) in vec2 input_UV;
 layout(location = 5) in vec2 input_UV2;
 layout(location = 6) in vec4 input_Color;
 layout(location = 0) out vec2 _entryPointOutput_UV;
-layout(location = 1) out vec4 _entryPointOutput_Color;
-layout(location = 2) out vec3 _entryPointOutput_WorldN;
-layout(location = 3) out vec3 _entryPointOutput_WorldB;
-layout(location = 4) out vec3 _entryPointOutput_WorldT;
+layout(location = 1) out vec2 _entryPointOutput_UV2;
+layout(location = 2) out vec4 _entryPointOutput_Color;
+layout(location = 3) out vec3 _entryPointOutput_WorldN;
+layout(location = 4) out vec3 _entryPointOutput_WorldB;
+layout(location = 5) out vec3 _entryPointOutput_WorldT;
 
 vec3 UnpackNormalizedFloat3(uint bits)
 {
@@ -255,6 +257,7 @@ VS_Output _main(VS_Input _input)
     {
         vec3 position = _input.Pos;
         vec2 uv = _input.UV;
+        vec2 uv2 = _input.UV2;
         vec4 color = _input.Color;
         if (_121.paramData.ShapeType == 0u)
         {
@@ -289,13 +292,14 @@ VS_Output _main(VS_Input _input)
         }
         uint param_9 = particle.Color;
         color *= UnpackColor(param_9);
-        vec4 _432 = color;
-        vec3 _434 = _432.xyz * _121.paramData.Emissive;
-        color.x = _434.x;
-        color.y = _434.y;
-        color.z = _434.z;
+        vec4 _434 = color;
+        vec3 _436 = _434.xyz * _121.paramData.Emissive;
+        color.x = _436.x;
+        color.y = _436.y;
+        color.z = _436.z;
         _output.Pos = (vec4(position, 1.0) * _136.constants.CameraMat) * _136.constants.ProjMat;
         _output.UV = uv;
+        _output.UV2 = uv2;
         _output.Color = color;
         if (_121.paramData.MaterialType == 1u)
         {
@@ -308,6 +312,7 @@ VS_Output _main(VS_Input _input)
     {
         _output.Pos = vec4(0.0);
         _output.UV = vec2(0.0);
+        _output.UV2 = vec2(0.0);
         _output.Color = vec4(0.0);
         if (_121.paramData.MaterialType == 1u)
         {
@@ -336,6 +341,7 @@ void main()
     _position.y = -_position.y;
     gl_Position = _position;
     _entryPointOutput_UV = flattenTemp.UV;
+    _entryPointOutput_UV2 = flattenTemp.UV2;
     _entryPointOutput_Color = flattenTemp.Color;
     _entryPointOutput_WorldN = flattenTemp.WorldN;
     _entryPointOutput_WorldB = flattenTemp.WorldB;

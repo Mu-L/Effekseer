@@ -34,6 +34,7 @@ struct VS_Output
 {
     float4 Pos;
     float2 UV;
+    float2 UV2;
     float4 Color;
     float3 WorldN;
     float3 WorldB;
@@ -172,10 +173,11 @@ struct Particles
 struct main0_out
 {
     float2 _entryPointOutput_UV [[user(locn0)]];
-    float4 _entryPointOutput_Color [[user(locn1)]];
-    float3 _entryPointOutput_WorldN [[user(locn2)]];
-    float3 _entryPointOutput_WorldB [[user(locn3)]];
-    float3 _entryPointOutput_WorldT [[user(locn4)]];
+    float2 _entryPointOutput_UV2 [[user(locn1)]];
+    float4 _entryPointOutput_Color [[user(locn2)]];
+    float3 _entryPointOutput_WorldN [[user(locn3)]];
+    float3 _entryPointOutput_WorldB [[user(locn4)]];
+    float3 _entryPointOutput_WorldT [[user(locn5)]];
     float4 gl_Position [[position]];
 };
 
@@ -292,6 +294,7 @@ VS_Output _main(VS_Input _input, constant cb1& _121, constant cb0& _136, constan
     {
         float3 position = _input.Pos;
         float2 uv = _input.UV;
+        float2 uv2 = _input.UV2;
         float4 color = _input.Color;
         if (_121.paramData.ShapeType == 0u)
         {
@@ -326,13 +329,14 @@ VS_Output _main(VS_Input _input, constant cb1& _121, constant cb0& _136, constan
         }
         uint param_9 = particle.Color;
         color *= UnpackColor(param_9);
-        float4 _432 = color;
-        float3 _434 = _432.xyz * _121.paramData.Emissive;
-        color.x = _434.x;
-        color.y = _434.y;
-        color.z = _434.z;
+        float4 _434 = color;
+        float3 _436 = _434.xyz * _121.paramData.Emissive;
+        color.x = _436.x;
+        color.y = _436.y;
+        color.z = _436.z;
         _output.Pos = _136.constants.ProjMat * (_136.constants.CameraMat * float4(position, 1.0));
         _output.UV = uv;
+        _output.UV2 = uv2;
         _output.Color = color;
         if (_121.paramData.MaterialType == 1u)
         {
@@ -345,6 +349,7 @@ VS_Output _main(VS_Input _input, constant cb1& _121, constant cb0& _136, constan
     {
         _output.Pos = float4(0.0);
         _output.UV = float2(0.0);
+        _output.UV2 = float2(0.0);
         _output.Color = float4(0.0);
         if (_121.paramData.MaterialType == 1u)
         {
@@ -372,6 +377,7 @@ vertex main0_out main0(main0_in in [[stage_in]], constant cb0& _136 [[buffer(0)]
     VS_Output flattenTemp = _main(_input, _121, _136, _265, Trails_1, Particles_1);
     out.gl_Position = flattenTemp.Pos;
     out._entryPointOutput_UV = flattenTemp.UV;
+    out._entryPointOutput_UV2 = flattenTemp.UV2;
     out._entryPointOutput_Color = flattenTemp.Color;
     out._entryPointOutput_WorldN = flattenTemp.WorldN;
     out._entryPointOutput_WorldB = flattenTemp.WorldB;

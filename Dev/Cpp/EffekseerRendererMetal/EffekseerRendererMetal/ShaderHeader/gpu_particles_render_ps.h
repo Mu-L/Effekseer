@@ -10,6 +10,7 @@ struct PS_Input
 {
     float4 Pos;
     float2 UV;
+    float2 UV2;
     float4 Color;
     float3 WorldN;
     float3 WorldB;
@@ -93,41 +94,48 @@ struct main0_out
 struct main0_in
 {
     float2 input_UV [[user(locn0)]];
-    float4 input_Color [[user(locn1)]];
-    float3 input_WorldN [[user(locn2)]];
-    float3 input_WorldB [[user(locn3)]];
-    float3 input_WorldT [[user(locn4)]];
+    float2 input_UV2 [[user(locn1)]];
+    float4 input_Color [[user(locn2)]];
+    float3 input_WorldN [[user(locn3)]];
+    float3 input_WorldB [[user(locn4)]];
+    float3 input_WorldT [[user(locn5)]];
 };
 
 static inline __attribute__((always_inline))
-float4 _main(PS_Input _input, texture2d<float> ColorTex, sampler ColorSamp, constant cb1& _45, texture2d<float> NormalTex, sampler NormalSamp, constant cb0& _103)
+float4 _main(PS_Input _input, texture2d<float> ColorTex, sampler ColorSamp, constant cb1& _49, texture2d<float> NormalTex, sampler NormalSamp, constant cb0& _107)
 {
     float4 color = _input.Color * ColorTex.sample(ColorSamp, _input.UV);
-    if (_45.paramData.MaterialType == 1u)
+    float2 uv2 = _input.UV2;
+    if (_49.paramData.MaterialType == 1u)
     {
         float3 texNormal = (NormalTex.sample(NormalSamp, _input.UV).xyz * 2.0) - float3(1.0);
         float3 normal = fast::normalize(float3x3(float3(_input.WorldT), float3(_input.WorldB), float3(_input.WorldN)) * texNormal);
-        float diffuse = fast::max(dot(float3(_103.constants.LightDir), normal), 0.0);
-        float4 _122 = color;
-        float3 _124 = _122.xyz * ((_103.constants.LightColor.xyz * diffuse) + _103.constants.LightAmbient.xyz);
-        color.x = _124.x;
-        color.y = _124.y;
-        color.z = _124.z;
+        float diffuse = fast::max(dot(float3(_107.constants.LightDir), normal), 0.0);
+        float4 _125 = color;
+        float3 _127 = _125.xyz * ((_107.constants.LightColor.xyz * diffuse) + _107.constants.LightAmbient.xyz);
+        color.x = _127.x;
+        color.y = _127.y;
+        color.z = _127.z;
     }
+    float4 _144 = color;
+    float2 _146 = _144.xy + (uv2 * (_49.paramData.FadeIn - _49.paramData.FadeIn));
+    color.x = _146.x;
+    color.y = _146.y;
     return color;
 }
 
-fragment main0_out main0(main0_in in [[stage_in]], constant cb0& _103 [[buffer(0)]], constant cb1& _45 [[buffer(1)]], texture2d<float> ColorTex [[texture(2)]], texture2d<float> NormalTex [[texture(3)]], sampler ColorSamp [[sampler(2)]], sampler NormalSamp [[sampler(3)]], float4 gl_FragCoord [[position]])
+fragment main0_out main0(main0_in in [[stage_in]], constant cb0& _107 [[buffer(0)]], constant cb1& _49 [[buffer(1)]], texture2d<float> ColorTex [[texture(2)]], texture2d<float> NormalTex [[texture(3)]], sampler ColorSamp [[sampler(2)]], sampler NormalSamp [[sampler(3)]], float4 gl_FragCoord [[position]])
 {
     main0_out out = {};
     PS_Input _input;
     _input.Pos = gl_FragCoord;
     _input.UV = in.input_UV;
+    _input.UV2 = in.input_UV2;
     _input.Color = in.input_Color;
     _input.WorldN = in.input_WorldN;
     _input.WorldB = in.input_WorldB;
     _input.WorldT = in.input_WorldT;
-    out._entryPointOutput = _main(_input, ColorTex, ColorSamp, _45, NormalTex, NormalSamp, _103);
+    out._entryPointOutput = _main(_input, ColorTex, ColorSamp, _49, NormalTex, NormalSamp, _107);
     return out;
 }
 

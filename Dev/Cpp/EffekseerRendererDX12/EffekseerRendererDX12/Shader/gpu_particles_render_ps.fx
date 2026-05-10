@@ -2,6 +2,7 @@ struct PS_Input
 {
     float4 Pos;
     float2 UV;
+    float2 UV2;
     float4 Color;
     float3 WorldN;
     float3 WorldB;
@@ -69,12 +70,12 @@ struct RenderConstants
 
 cbuffer cb1 : register(b1)
 {
-    ParameterData _45_paramData : packoffset(c0);
+    ParameterData _49_paramData : packoffset(c0);
 };
 
 cbuffer cb0 : register(b0)
 {
-    RenderConstants _103_constants : packoffset(c0);
+    RenderConstants _107_constants : packoffset(c0);
 };
 
 Texture2D<float4> ColorTex : register(t2);
@@ -84,6 +85,7 @@ SamplerState NormalSamp : register(s3);
 
 static float4 gl_FragCoord;
 static float2 input_UV;
+static float2 input_UV2;
 static float4 input_Color;
 static float3 input_WorldN;
 static float3 input_WorldB;
@@ -93,10 +95,11 @@ static float4 _entryPointOutput;
 struct SPIRV_Cross_Input
 {
     float2 input_UV : TEXCOORD0;
-    float4 input_Color : TEXCOORD1;
-    float3 input_WorldN : TEXCOORD2;
-    float3 input_WorldB : TEXCOORD3;
-    float3 input_WorldT : TEXCOORD4;
+    float2 input_UV2 : TEXCOORD1;
+    float4 input_Color : TEXCOORD2;
+    float3 input_WorldN : TEXCOORD3;
+    float3 input_WorldB : TEXCOORD4;
+    float3 input_WorldT : TEXCOORD5;
     float4 gl_FragCoord : SV_Position;
 };
 
@@ -108,17 +111,22 @@ struct SPIRV_Cross_Output
 float4 _main(PS_Input _input)
 {
     float4 color = _input.Color * ColorTex.Sample(ColorSamp, _input.UV);
-    if (_45_paramData.MaterialType == 1u)
+    float2 uv2 = _input.UV2;
+    if (_49_paramData.MaterialType == 1u)
     {
         float3 texNormal = (NormalTex.Sample(NormalSamp, _input.UV).xyz * 2.0f) - 1.0f.xxx;
         float3 normal = normalize(mul(texNormal, float3x3(float3(_input.WorldT), float3(_input.WorldB), float3(_input.WorldN))));
-        float diffuse = max(dot(_103_constants.LightDir, normal), 0.0f);
-        float4 _122 = color;
-        float3 _124 = _122.xyz * ((_103_constants.LightColor.xyz * diffuse) + _103_constants.LightAmbient.xyz);
-        color.x = _124.x;
-        color.y = _124.y;
-        color.z = _124.z;
+        float diffuse = max(dot(_107_constants.LightDir, normal), 0.0f);
+        float4 _125 = color;
+        float3 _127 = _125.xyz * ((_107_constants.LightColor.xyz * diffuse) + _107_constants.LightAmbient.xyz);
+        color.x = _127.x;
+        color.y = _127.y;
+        color.z = _127.z;
     }
+    float4 _144 = color;
+    float2 _146 = _144.xy + (uv2 * (_49_paramData.FadeIn - _49_paramData.FadeIn));
+    color.x = _146.x;
+    color.y = _146.y;
     return color;
 }
 
@@ -127,6 +135,7 @@ void frag_main()
     PS_Input _input;
     _input.Pos = gl_FragCoord;
     _input.UV = input_UV;
+    _input.UV2 = input_UV2;
     _input.Color = input_Color;
     _input.WorldN = input_WorldN;
     _input.WorldB = input_WorldB;
@@ -139,6 +148,7 @@ SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
     gl_FragCoord = stage_input.gl_FragCoord;
     gl_FragCoord.w = 1.0 / gl_FragCoord.w;
     input_UV = stage_input.input_UV;
+    input_UV2 = stage_input.input_UV2;
     input_Color = stage_input.input_Color;
     input_WorldN = stage_input.input_WorldN;
     input_WorldB = stage_input.input_WorldB;

@@ -4,6 +4,7 @@ struct PS_Input
 {
     vec4 Pos;
     vec2 UV;
+    vec2 UV2;
     vec4 Color;
     vec3 WorldN;
     vec3 WorldB;
@@ -72,37 +73,43 @@ struct RenderConstants
 layout(set = 0, binding = 1, std140) uniform cb1
 {
     ParameterData paramData;
-} _45;
+} _49;
 
 layout(set = 0, binding = 0, std140) uniform cb0
 {
     layout(row_major) RenderConstants constants;
-} _103;
+} _107;
 
 layout(set = 1, binding = 2) uniform sampler2D Sampler_ColorSamp;
 layout(set = 1, binding = 3) uniform sampler2D Sampler_NormalSamp;
 
 layout(location = 0) in vec2 input_UV;
-layout(location = 1) in vec4 input_Color;
-layout(location = 2) in vec3 input_WorldN;
-layout(location = 3) in vec3 input_WorldB;
-layout(location = 4) in vec3 input_WorldT;
+layout(location = 1) in vec2 input_UV2;
+layout(location = 2) in vec4 input_Color;
+layout(location = 3) in vec3 input_WorldN;
+layout(location = 4) in vec3 input_WorldB;
+layout(location = 5) in vec3 input_WorldT;
 layout(location = 0) out vec4 _entryPointOutput;
 
 vec4 _main(PS_Input _input)
 {
     vec4 color = _input.Color * texture(Sampler_ColorSamp, _input.UV);
-    if (_45.paramData.MaterialType == 1u)
+    vec2 uv2 = _input.UV2;
+    if (_49.paramData.MaterialType == 1u)
     {
         vec3 texNormal = (texture(Sampler_NormalSamp, _input.UV).xyz * 2.0) - vec3(1.0);
         vec3 normal = normalize(mat3(vec3(_input.WorldT), vec3(_input.WorldB), vec3(_input.WorldN)) * texNormal);
-        float diffuse = max(dot(_103.constants.LightDir, normal), 0.0);
-        vec4 _122 = color;
-        vec3 _124 = _122.xyz * ((_103.constants.LightColor.xyz * diffuse) + _103.constants.LightAmbient.xyz);
-        color.x = _124.x;
-        color.y = _124.y;
-        color.z = _124.z;
+        float diffuse = max(dot(_107.constants.LightDir, normal), 0.0);
+        vec4 _125 = color;
+        vec3 _127 = _125.xyz * ((_107.constants.LightColor.xyz * diffuse) + _107.constants.LightAmbient.xyz);
+        color.x = _127.x;
+        color.y = _127.y;
+        color.z = _127.z;
     }
+    vec4 _144 = color;
+    vec2 _146 = _144.xy + (uv2 * (_49.paramData.FadeIn - _49.paramData.FadeIn));
+    color.x = _146.x;
+    color.y = _146.y;
     return color;
 }
 
@@ -111,6 +118,7 @@ void main()
     PS_Input _input;
     _input.Pos = gl_FragCoord;
     _input.UV = input_UV;
+    _input.UV2 = input_UV2;
     _input.Color = input_Color;
     _input.WorldN = input_WorldN;
     _input.WorldB = input_WorldB;

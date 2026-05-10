@@ -27,6 +27,7 @@ struct VS_Output
 {
     float4 Pos;
     float2 UV;
+    float2 UV2;
     float4 Color;
     float3 WorldN;
     float3 WorldB;
@@ -148,6 +149,7 @@ static float2 input_UV;
 static float2 input_UV2;
 static float4 input_Color;
 static float2 _entryPointOutput_UV;
+static float2 _entryPointOutput_UV2;
 static float4 _entryPointOutput_Color;
 static float3 _entryPointOutput_WorldN;
 static float3 _entryPointOutput_WorldB;
@@ -169,10 +171,11 @@ struct SPIRV_Cross_Input
 struct SPIRV_Cross_Output
 {
     float2 _entryPointOutput_UV : TEXCOORD0;
-    float4 _entryPointOutput_Color : TEXCOORD1;
-    float3 _entryPointOutput_WorldN : TEXCOORD2;
-    float3 _entryPointOutput_WorldB : TEXCOORD3;
-    float3 _entryPointOutput_WorldT : TEXCOORD4;
+    float2 _entryPointOutput_UV2 : TEXCOORD1;
+    float4 _entryPointOutput_Color : TEXCOORD2;
+    float3 _entryPointOutput_WorldN : TEXCOORD3;
+    float3 _entryPointOutput_WorldB : TEXCOORD4;
+    float3 _entryPointOutput_WorldT : TEXCOORD5;
     float4 gl_Position : SV_Position;
 };
 
@@ -284,6 +287,7 @@ VS_Output _main(VS_Input _input)
     {
         float3 position = _input.Pos;
         float2 uv = _input.UV;
+        float2 uv2 = _input.UV2;
         float4 color = _input.Color;
         if (_121_paramData.ShapeType == 0u)
         {
@@ -318,13 +322,14 @@ VS_Output _main(VS_Input _input)
         }
         uint param_9 = particle.Color;
         color *= UnpackColor(param_9);
-        float4 _432 = color;
-        float3 _434 = _432.xyz * _121_paramData.Emissive;
-        color.x = _434.x;
-        color.y = _434.y;
-        color.z = _434.z;
+        float4 _434 = color;
+        float3 _436 = _434.xyz * _121_paramData.Emissive;
+        color.x = _436.x;
+        color.y = _436.y;
+        color.z = _436.z;
         _output.Pos = mul(_136_constants.ProjMat, mul(_136_constants.CameraMat, float4(position, 1.0f)));
         _output.UV = uv;
+        _output.UV2 = uv2;
         _output.Color = color;
         if (_121_paramData.MaterialType == 1u)
         {
@@ -337,6 +342,7 @@ VS_Output _main(VS_Input _input)
     {
         _output.Pos = 0.0f.xxxx;
         _output.UV = 0.0f.xx;
+        _output.UV2 = 0.0f.xx;
         _output.Color = 0.0f.xxxx;
         if (_121_paramData.MaterialType == 1u)
         {
@@ -363,6 +369,7 @@ void vert_main()
     VS_Output flattenTemp = _main(_input);
     gl_Position = flattenTemp.Pos;
     _entryPointOutput_UV = flattenTemp.UV;
+    _entryPointOutput_UV2 = flattenTemp.UV2;
     _entryPointOutput_Color = flattenTemp.Color;
     _entryPointOutput_WorldN = flattenTemp.WorldN;
     _entryPointOutput_WorldB = flattenTemp.WorldB;
@@ -384,6 +391,7 @@ SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
     SPIRV_Cross_Output stage_output;
     stage_output.gl_Position = gl_Position;
     stage_output._entryPointOutput_UV = _entryPointOutput_UV;
+    stage_output._entryPointOutput_UV2 = _entryPointOutput_UV2;
     stage_output._entryPointOutput_Color = _entryPointOutput_Color;
     stage_output._entryPointOutput_WorldN = _entryPointOutput_WorldN;
     stage_output._entryPointOutput_WorldB = _entryPointOutput_WorldB;
