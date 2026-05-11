@@ -185,7 +185,7 @@ struct StandardRendererState
 				return true;
 		}
 
-		if (CustomData1Count != state.CustomData1Count)
+		if (CustomData2Count != state.CustomData2Count)
 			return true;
 
 		if (CustomData1Count != state.CustomData1Count)
