@@ -1,6 +1,7 @@
 # WebGPU Build and Test
 
 This document describes the current local build and test flow for Effekseer's WebGPU backend.
+Run the commands from the Effekseer repository root unless a step says otherwise.
 
 ## Native Runtime
 
@@ -47,8 +48,11 @@ The browser WebGPU test requires Emscripten.
 Activate emsdk:
 
 ```powershell
-& D:\ProgramFiles\emsdk\emsdk.ps1 activate latest
-& D:\ProgramFiles\emsdk\emsdk_env.ps1
+# Replace <path-to-emsdk> with your local emsdk checkout.
+Push-Location "<path-to-emsdk>"
+.\emsdk.ps1 activate latest
+.\emsdk_env.ps1
+Pop-Location
 ```
 
 Configure the browser WebGPU test build:
@@ -77,16 +81,17 @@ The browser test initializes a real browser WebGPU device through Emscripten, re
 If headless Chrome or Edge exits before WebGPU test execution, rerun with non-headless Edge:
 
 ```powershell
-$env:CHROME_PATH = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 $env:LLGI_WEBGPU_HEADLESS = "0"
 ctest --test-dir build_effekseer_webgpu_browser -R Effekseer_WebGPU_Browser --output-on-failure
 ```
 
+The runner auto-detects common Chrome and Edge install locations on Windows.
 If the browser is installed elsewhere, set `CHROME_PATH` or `EDGE_PATH` before running the test:
 
 ```powershell
 $env:CHROME_PATH = "C:\Program Files\Google\Chrome\Application\chrome.exe"
-$env:EDGE_PATH = "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+# or, for Microsoft Edge:
+$env:EDGE_PATH = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 ```
 
 ## Browser Player
@@ -122,8 +127,11 @@ The player script serves the generated files over localhost and opens a WebGPU-c
 Configure LLGI's WebGPU test build:
 
 ```powershell
-cmake -S Dev/Cpp/3rdParty/LLGI -B Dev/Cpp/3rdParty/LLGI/build-webgpu-test -DBUILD_TEST=ON -DBUILD_WEBGPU=ON -DWEBGPU_DAWN_SOURCE_DIR=E:/Dev/_Effekseer/Effekseer/Dev/Cpp/3rdParty/LLGI/thirdparty/dawn
+cmake -S Dev/Cpp/3rdParty/LLGI -B Dev/Cpp/3rdParty/LLGI/build-webgpu-test -DBUILD_TEST=ON -DBUILD_WEBGPU=ON
 ```
+
+By default LLGI uses `Dev/Cpp/3rdParty/LLGI/thirdparty/dawn` when it exists.
+To use a Dawn checkout outside the repository, add `-DWEBGPU_DAWN_SOURCE_DIR=<path-to-dawn>`.
 
 Build `LLGI_Test`:
 
@@ -155,7 +163,7 @@ cmake --build Dev/Cpp/3rdParty/LLGI/build-webgpu-tool --target ShaderTranspiler 
 Regenerate Effekseer WebGPU shaders:
 
 ```powershell
-$env:SHADER_TRANSPILER = "E:\Dev\_Effekseer\Effekseer\Dev\Cpp\3rdParty\LLGI\build-webgpu-tool\tools\ShaderTranspiler\Release\ShaderTranspiler.exe"
+$env:SHADER_TRANSPILER = ".\Dev\Cpp\3rdParty\LLGI\build-webgpu-tool\tools\ShaderTranspiler\Release\ShaderTranspiler.exe"
 python Dev\Cpp\EffekseerRendererWebGPU\EffekseerRendererWebGPU\compile.py
 ```
 

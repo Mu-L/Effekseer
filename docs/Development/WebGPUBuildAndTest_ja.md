@@ -1,6 +1,7 @@
 # WebGPU のビルドとテスト
 
 このドキュメントでは、Effekseer の WebGPU バックエンドをローカルでビルドしてテストする最新手順を説明します。
+特に記載がない限り、コマンドは Effekseer リポジトリのルートから実行します。
 
 ## ネイティブランタイム
 
@@ -47,8 +48,11 @@ build_webgpu_runtime_test\Dev\Cpp\Test\Debug\TestCpp.exe --filter=Runtime.BasicR
 emsdk を有効化します。
 
 ```powershell
-& D:\ProgramFiles\emsdk\emsdk.ps1 activate latest
-& D:\ProgramFiles\emsdk\emsdk_env.ps1
+# <path-to-emsdk> はローカルの emsdk チェックアウトに置き換えます。
+Push-Location "<path-to-emsdk>"
+.\emsdk.ps1 activate latest
+.\emsdk_env.ps1
+Pop-Location
 ```
 
 ブラウザ WebGPU テスト用のビルドを構成します。
@@ -77,16 +81,17 @@ ctest --test-dir build_effekseer_webgpu_browser -R Effekseer_WebGPU_Browser --ou
 ヘッドレス Chrome または Edge が WebGPU テスト実行前に終了する場合は、非ヘッドレス Edge で再実行します。
 
 ```powershell
-$env:CHROME_PATH = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 $env:LLGI_WEBGPU_HEADLESS = "0"
 ctest --test-dir build_effekseer_webgpu_browser -R Effekseer_WebGPU_Browser --output-on-failure
 ```
 
+runner は Windows の一般的な Chrome / Edge インストール先を自動検出します。
 ブラウザが通常とは異なる場所にインストールされている場合は、実行前に `CHROME_PATH` または `EDGE_PATH` を設定してください。
 
 ```powershell
 $env:CHROME_PATH = "C:\Program Files\Google\Chrome\Application\chrome.exe"
-$env:EDGE_PATH = "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+# Microsoft Edge を使う場合:
+$env:EDGE_PATH = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 ```
 
 ## ブラウザプレイヤー
@@ -122,8 +127,11 @@ node Dev\Cpp\Test\Runtime\browser\run_effekseer_webgpu_player.mjs build_effeksee
 LLGI の WebGPU テスト用ビルドを構成します。
 
 ```powershell
-cmake -S Dev/Cpp/3rdParty/LLGI -B Dev/Cpp/3rdParty/LLGI/build-webgpu-test -DBUILD_TEST=ON -DBUILD_WEBGPU=ON -DWEBGPU_DAWN_SOURCE_DIR=E:/Dev/_Effekseer/Effekseer/Dev/Cpp/3rdParty/LLGI/thirdparty/dawn
+cmake -S Dev/Cpp/3rdParty/LLGI -B Dev/Cpp/3rdParty/LLGI/build-webgpu-test -DBUILD_TEST=ON -DBUILD_WEBGPU=ON
 ```
+
+既定では、存在する場合に `Dev/Cpp/3rdParty/LLGI/thirdparty/dawn` が使われます。
+リポジトリ外の Dawn チェックアウトを使う場合は `-DWEBGPU_DAWN_SOURCE_DIR=<path-to-dawn>` を追加してください。
 
 `LLGI_Test` をビルドします。
 
@@ -155,7 +163,7 @@ cmake --build Dev/Cpp/3rdParty/LLGI/build-webgpu-tool --target ShaderTranspiler 
 Effekseer の WebGPU シェーダーを再生成します。
 
 ```powershell
-$env:SHADER_TRANSPILER = "E:\Dev\_Effekseer\Effekseer\Dev\Cpp\3rdParty\LLGI\build-webgpu-tool\tools\ShaderTranspiler\Release\ShaderTranspiler.exe"
+$env:SHADER_TRANSPILER = ".\Dev\Cpp\3rdParty\LLGI\build-webgpu-tool\tools\ShaderTranspiler\Release\ShaderTranspiler.exe"
 python Dev\Cpp\EffekseerRendererWebGPU\EffekseerRendererWebGPU\compile.py
 ```
 
