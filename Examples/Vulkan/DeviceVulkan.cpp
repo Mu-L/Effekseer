@@ -142,7 +142,12 @@ void DeviceVulkan::SetupEffekseerModules(::Effekseer::ManagerRef efkManager, boo
 	renderPassInfo.DoesPresentToScreen = true;
 	renderPassInfo.RenderTextureCount = 1;
 	renderPassInfo.RenderTextureFormats[0] = VK_FORMAT_B8G8R8A8_UNORM;
-	renderPassInfo.DepthFormat = VK_FORMAT_D24_UNORM_S8_UINT;
+	auto screenRenderPass = platform->GetCurrentScreen();
+	if (screenRenderPass != nullptr && screenRenderPass->GetHasDepthTexture())
+	{
+		auto depthFormat = screenRenderPass->GetDepthTexture()->GetFormat();
+		renderPassInfo.DepthFormat = LLGI::VulkanHelper::TextureFormatToVkFormat(depthFormat);
+	}
 	efkRenderer = ::EffekseerRendererVulkan::Create(graphicsDevice, renderPassInfo, 8000);
 	if (efkRenderer == nullptr)
 	{
