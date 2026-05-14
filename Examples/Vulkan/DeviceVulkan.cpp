@@ -1,5 +1,7 @@
 ﻿#include "DeviceVulkan.h"
 
+#include <LLGI.Texture.h>
+
 bool DeviceVulkan::Initialize(const char* windowTitle, Utils::Vec2I windowSize)
 {
 	// A code to initialize DirectX12 is too long, so I use LLGI
