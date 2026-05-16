@@ -161,12 +161,13 @@ if(BUILD_WEBGPU)
   add_library(
     EffekseerMaterialCompilerWebGPU SHARED
     ../EffekseerRendererWebGPU/EffekseerRendererWebGPU/EffekseerMaterialCompilerWebGPU.h
-    ../EffekseerRendererWebGPU/EffekseerRendererWebGPU/EffekseerMaterialCompilerWebGPU.cpp)
+    ../EffekseerRendererWebGPU/EffekseerRendererWebGPU/EffekseerMaterialCompilerWebGPU.cpp
+    WGSLGenerator/ShaderGenerator.h
+    WGSLGenerator/ShaderGenerator.cpp)
 
   target_link_libraries(
     EffekseerMaterialCompilerWebGPU
-    PRIVATE Effekseer EffekseerMaterialCompilerHLSLGenerator LLGI
-            ShaderTranspilerCore)
+    PRIVATE Effekseer LLGI)
 
   target_include_directories(EffekseerMaterialCompilerWebGPU
                              PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)

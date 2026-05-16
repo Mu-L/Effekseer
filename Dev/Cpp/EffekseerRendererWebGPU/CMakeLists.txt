@@ -10,11 +10,9 @@ if(BUILD_WEBGPU_BROWSER_TEST)
 endif()
 
 list(APPEND LOCAL_HEADERS_WebGPU
-     ../EffekseerMaterialCompiler/HLSLGenerator/ShaderGenerator.h
-     ../EffekseerMaterialCompiler/Common/ShaderGeneratorCommon.h)
+     ../EffekseerMaterialCompiler/WGSLGenerator/ShaderGenerator.h)
 list(APPEND LOCAL_SOURCES_WebGPU
-     ../EffekseerMaterialCompiler/HLSLGenerator/ShaderGenerator.cpp
-     ../EffekseerMaterialCompiler/Common/ShaderGeneratorCommon.cpp)
+     ../EffekseerMaterialCompiler/WGSLGenerator/ShaderGenerator.cpp)
 
 filterfolder("${LOCAL_HEADERS_WebGPU}")
 filterfolder("${LOCAL_SOURCES_WebGPU}")
@@ -42,10 +40,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER
                                                  "${PublicHeaders}")
 target_link_libraries(${PROJECT_NAME} PUBLIC Effekseer EffekseerRendererCommon
                                              EffekseerRendererLLGI LLGI)
-if(NOT BUILD_WEBGPU_BROWSER_TEST)
-  target_link_libraries(${PROJECT_NAME} PRIVATE
-                        $<BUILD_INTERFACE:ShaderTranspilerCore>)
-endif()
 
 target_include_directories(
   ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

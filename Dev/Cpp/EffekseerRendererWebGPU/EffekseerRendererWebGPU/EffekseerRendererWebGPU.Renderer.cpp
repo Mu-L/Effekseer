@@ -2,9 +2,7 @@
 #include "../../3rdParty/LLGI/src/WebGPU/LLGI.GraphicsWebGPU.h"
 #include <EffekseerRendererLLGI/EffekseerRendererLLGI.RendererImplemented.h>
 
-#ifndef __EMSCRIPTEN__
 #include "EffekseerMaterialCompilerWebGPU.h"
-#endif
 #include "ShaderHeader/ad_model_distortion_ps.h"
 #include "ShaderHeader/ad_model_distortion_vs.h"
 #include "ShaderHeader/ad_model_lit_ps.h"
@@ -102,9 +100,7 @@ Create(::Effekseer::Backend::GraphicsDeviceRef graphicsDevice, RenderPassInforma
 	key.DepthFormat = LLGI::ConvertFormat(renderPassInformation.DepthFormat);
 
 	renderer->platformType_ = Effekseer::CompiledMaterialPlatformType::WebGPU;
-#ifndef __EMSCRIPTEN__
 	renderer->materialCompiler_ = new Effekseer::MaterialCompilerWebGPU();
-#endif
 
 	if (!renderer->Initialize(gd, key, false))
 	{

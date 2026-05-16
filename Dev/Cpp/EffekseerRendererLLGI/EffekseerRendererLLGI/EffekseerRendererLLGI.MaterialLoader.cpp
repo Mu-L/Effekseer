@@ -66,7 +66,7 @@ MaterialLoader ::~MaterialLoader()
 	// code file
 	{
 		auto binaryPath = std::u16string(path) + u"d";
-		auto reader = fileInterface_->OpenRead(binaryPath.c_str());
+		auto reader = fileInterface_->TryOpenRead(binaryPath.c_str());
 
 		if (reader != nullptr)
 		{

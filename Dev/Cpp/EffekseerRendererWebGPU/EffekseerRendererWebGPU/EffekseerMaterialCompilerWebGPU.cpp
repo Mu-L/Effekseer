@@ -1,8 +1,7 @@
 #include "EffekseerMaterialCompilerWebGPU.h"
 
 #include "../../3rdParty/LLGI/src/WebGPU/LLGI.CompilerWebGPU.h"
-#include "../../3rdParty/LLGI/tools/ShaderTranspilerCore/ShaderTranspilerCore.h"
-#include "../../EffekseerMaterialCompiler/HLSLGenerator/ShaderGenerator.h"
+#include "../../EffekseerMaterialCompiler/WGSLGenerator/ShaderGenerator.h"
 
 #include <array>
 #include <cstring>
@@ -93,32 +92,9 @@ public:
 	}
 };
 
-std::vector<uint8_t> CompileToWebGPUShaderBinary(const std::string& hlsl, LLGI::ShaderStageType stage)
+std::vector<uint8_t> CompileToWebGPUShaderBinary(const std::string& wgsl, LLGI::ShaderStageType stage)
 {
 	std::vector<uint8_t> ret;
-	LLGI::SPIRVGenerator generator([](std::string) -> std::vector<std::uint8_t> { return {}; });
-	auto spirv = generator.Generate("material.hlsl", hlsl.c_str(), {}, {}, stage, false, true);
-	if (spirv == nullptr || !spirv->GetError().empty())
-	{
-		std::cout << "WebGPU Material SPIR-V Generate Error" << std::endl;
-		if (spirv != nullptr)
-		{
-			std::cout << spirv->GetError() << std::endl;
-		}
-		std::cout << hlsl << std::endl;
-		return ret;
-	}
-
-	LLGI::SPIRVToWGSLTranspiler transpiler;
-	if (!transpiler.Transpile(spirv, stage))
-	{
-		std::cout << "WebGPU Material WGSL Transpile Error" << std::endl;
-		std::cout << transpiler.GetErrorCode() << std::endl;
-		std::cout << hlsl << std::endl;
-		return ret;
-	}
-
-	const auto wgsl = transpiler.GetCode();
 	LLGI::CompilerWebGPU compiler;
 	LLGI::CompilerResult result;
 	compiler.Compile(result, wgsl.c_str(), stage);
@@ -141,9 +117,8 @@ CompiledMaterialBinary* MaterialCompilerWebGPU::Compile(MaterialFile* material, 
 
 	auto saveBinary = [material, binary, maximumUniformCount, maximumTextureCount](MaterialShaderType type)
 	{
-		DirectX::ShaderGenerator generator(DirectX::ShaderGeneratorTarget::WebGPU);
-		const auto shader =
-			generator.GenerateShader(material, type, maximumUniformCount, maximumTextureCount, 0, WebGPUModelRendererInstanceCount);
+		WGSL::ShaderGenerator generator;
+		const auto shader = generator.GenerateShader(material, type, maximumUniformCount, maximumTextureCount, WebGPUModelRendererInstanceCount);
 		binary->SetVertexShaderData(type, CompileToWebGPUShaderBinary(shader.CodeVS, LLGI::ShaderStageType::Vertex));
 		binary->SetPixelShaderData(type, CompileToWebGPUShaderBinary(shader.CodePS, LLGI::ShaderStageType::Pixel));
 	};
