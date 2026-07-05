@@ -17,8 +17,8 @@ private:
 
 	Backend::VertexLayoutRef vertexLayout_;
 
-	void* vertexConstantBuffer_;
-	void* pixelConstantBuffer_;
+	uint8_t* vertexConstantBuffer_;
+	uint8_t* pixelConstantBuffer_;
 	int32_t vertexConstantBufferSize = 0;
 	int32_t pixelConstantBufferSize = 0;
 
@@ -63,8 +63,8 @@ public:
 		return vertexLayout_;
 	}
 
-	void SetVertexConstantBufferSize(int32_t size);
-	void SetPixelConstantBufferSize(int32_t size);
+	void SetVertexConstantBufferSize(int32_t size) override;
+	void SetPixelConstantBufferSize(int32_t size) override;
 	int32_t GetVertexConstantBufferSize()
 	{
 		return vertexConstantBufferSize;
@@ -74,16 +74,16 @@ public:
 		return pixelConstantBufferSize;
 	}
 
-	void* GetVertexConstantBuffer()
+	void* GetVertexConstantBuffer() override
 	{
 		return vertexConstantBuffer_;
 	}
-	void* GetPixelConstantBuffer()
+	void* GetPixelConstantBuffer() override
 	{
 		return pixelConstantBuffer_;
 	}
 
-	void SetConstantBuffer();
+	void SetConstantBuffer() override;
 };
 
 } // namespace EffekseerRendererLLGI

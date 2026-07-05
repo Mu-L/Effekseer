@@ -297,8 +297,6 @@ bool Texture::Init(const Effekseer::Backend::TextureParameter& param, const Effe
 		texParam.IsMipmapGenerationEnabled = false;
 	}
 
-	LLGI::TextureFormatType format = LLGI::TextureFormatType::R8G8B8A8_UNORM;
-
 	if (param.Format == Effekseer::Backend::TextureFormatType::R8G8B8A8_UNORM)
 	{
 		texParam.Format = LLGI::TextureFormatType::R8G8B8A8_UNORM;
@@ -375,7 +373,19 @@ bool Texture::Init(const Effekseer::Backend::TextureParameter& param, const Effe
 	}
 
 	auto texture = graphicsDevice_->GetGraphics()->CreateTexture(texParam);
+	if (texture == nullptr)
+	{
+		Effekseer::Log(Effekseer::LogType::Error, "Failed to create a texture.");
+		return false;
+	}
+
 	auto buf = texture->Lock();
+	if (buf == nullptr && initialData.size() > 0)
+	{
+		LLGI::SafeRelease(texture);
+		Effekseer::Log(Effekseer::LogType::Error, "Failed to lock a texture.");
+		return false;
+	}
 
 	if (initialData.size() > 0)
 	{
@@ -721,9 +731,13 @@ LLGI::PipelineState* PipelineState::GetOrCreatePipelineState(LLGI::RenderPassPip
 	return nullptr;
 }
 
-GraphicsDevice::GraphicsDevice(LLGI::Graphics* graphics, bool usesImmediateBufferUpload, LLGI::DeviceType deviceType)
+GraphicsDevice::GraphicsDevice(LLGI::Graphics* graphics,
+							   bool usesImmediateBufferUpload,
+							   LLGI::DeviceType deviceType,
+							   bool usesRawStorageBufferView)
 	: graphics_(graphics)
 	, usesImmediateBufferUpload_(usesImmediateBufferUpload)
+	, usesRawStorageBufferView_(usesRawStorageBufferView)
 	, deviceType_(deviceType)
 {
 	ES_SAFE_ADDREF(graphics_);
@@ -789,10 +803,13 @@ void GraphicsDevice::BindResourceBinders(const std::array<Effekseer::Backend::Re
 		else if (auto storageBufferBinder = std::get_if<Effekseer::Backend::StorageBufferBinder>(&binder))
 		{
 			auto buf = storageBufferBinder->StorageBuffer.DownCast<Backend::StorageBuffer>();
+			const auto viewType =
+				usesRawStorageBufferView_ ? LLGI::StorageBufferViewType::Raw : LLGI::StorageBufferViewType::Structured;
 			commandList_->SetStorageBuffer((buf) ? buf->GetBuffer() : nullptr,
 										   GetStorageBufferBindingStride(buf.Get()),
 										   slot,
-										   ToLLGIShaderResourceAccess(storageBufferBinder->Access));
+										   ToLLGIShaderResourceAccess(storageBufferBinder->Access),
+										   viewType);
 		}
 	}
 }

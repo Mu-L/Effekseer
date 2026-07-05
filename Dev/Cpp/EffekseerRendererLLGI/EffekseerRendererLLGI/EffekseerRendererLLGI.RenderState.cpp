@@ -6,8 +6,8 @@ namespace EffekseerRendererLLGI
 {
 
 RenderState::RenderState(RendererImplemented* renderer)
-	: renderer_(renderer)
 {
+	(void)renderer;
 }
 
 RenderState::~RenderState()
@@ -41,7 +41,6 @@ void RenderState::Update(bool forced)
 
 	if (changeRasterizer)
 	{
-		auto cullingType = (int32_t)next_.CullingType;
 	}
 
 	if (active_.AlphaBlend != next_.AlphaBlend || forced)
@@ -51,7 +50,6 @@ void RenderState::Update(bool forced)
 
 	if (changeBlend)
 	{
-		auto alphaBlend = (int32_t)next_.AlphaBlend;
 	}
 
 	for (int32_t i = 0; i < Effekseer::TextureSlotMax; i++)
@@ -70,8 +68,6 @@ void RenderState::Update(bool forced)
 
 		if (changeSampler)
 		{
-			auto filter = (int32_t)next_.TextureFilterTypes[i];
-			auto wrap = (int32_t)next_.TextureWrapTypes[i];
 		}
 	}
 

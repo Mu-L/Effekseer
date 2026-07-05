@@ -108,7 +108,6 @@ void GpuTimer::RemoveTimer(const void* object)
 	auto it = timeData_.find(object);
 	if (it != timeData_.end())
 	{
-		TimeData& timeData = it->second;
 		timeData_.erase(it);
 	}
 }

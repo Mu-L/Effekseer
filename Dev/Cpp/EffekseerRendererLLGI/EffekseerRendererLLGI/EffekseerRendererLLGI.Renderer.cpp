@@ -281,9 +281,9 @@ LLGI::PipelineState* RendererImplemented::GetOrCreatePiplineState()
 RendererImplemented::RendererImplemented(int32_t squareMaxCount)
 	: graphicsDevice_(nullptr)
 	, squareMaxCount_(squareMaxCount)
+	, standardRenderer_(nullptr)
 	, coordinateSystem_(::Effekseer::CoordinateSystem::RH)
 	, renderState_(nullptr)
-	, standardRenderer_(nullptr)
 	, distortingCallback_(nullptr)
 {
 }

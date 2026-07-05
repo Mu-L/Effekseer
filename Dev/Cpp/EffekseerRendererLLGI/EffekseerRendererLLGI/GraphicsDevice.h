@@ -326,6 +326,7 @@ private:
 	std::vector<std::shared_ptr<LLGI::Texture>> pendingMipMapTextures_;
 	std::vector<PendingBufferUpload> pendingBufferUploads_;
 	bool usesImmediateBufferUpload_ = false;
+	bool usesRawStorageBufferView_ = false;
 	LLGI::DeviceType deviceType_ = LLGI::DeviceType::Default;
 
 	void FlushPendingMipMapGenerations();
@@ -334,7 +335,10 @@ private:
 	void BindResourceBinders(const std::array<Effekseer::Backend::ResourceBinder, Effekseer::Backend::DrawParameter::ResourceSlotCount>& resourceBinders);
 
 public:
-	GraphicsDevice(LLGI::Graphics* graphics, bool usesImmediateBufferUpload = false, LLGI::DeviceType deviceType = LLGI::DeviceType::Default);
+	GraphicsDevice(LLGI::Graphics* graphics,
+				   bool usesImmediateBufferUpload = false,
+				   LLGI::DeviceType deviceType = LLGI::DeviceType::Default,
+				   bool usesRawStorageBufferView = false);
 
 	~GraphicsDevice() override;
 
