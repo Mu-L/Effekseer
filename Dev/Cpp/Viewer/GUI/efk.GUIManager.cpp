@@ -727,7 +727,7 @@ int GUIManager::GetMouseButton(int32_t mouseButton)
 	return window->GetMouseButton(mouseButton);
 }
 
-int GUIManager::GetMouseWheel()
+float GUIManager::GetMouseWheel()
 {
 	return ImGui::GetIO().MouseWheel;
 }

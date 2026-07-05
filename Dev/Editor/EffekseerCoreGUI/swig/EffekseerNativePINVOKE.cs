@@ -1834,7 +1834,7 @@ class EffekseerNativePINVOKE {
   public static extern int GUIManager_GetMouseButton(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2);
 
   [global::System.Runtime.InteropServices.DllImport("Viewer", EntryPoint="CSharp_Effekseerfswig_GUIManager_GetMouseWheel___")]
-  public static extern int GUIManager_GetMouseWheel(global::System.Runtime.InteropServices.HandleRef jarg1);
+  public static extern float GUIManager_GetMouseWheel(global::System.Runtime.InteropServices.HandleRef jarg1);
 
   [global::System.Runtime.InteropServices.DllImport("Viewer", EntryPoint="CSharp_Effekseerfswig_GUIManager_SetCallback___")]
   public static extern void GUIManager_SetCallback(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2);

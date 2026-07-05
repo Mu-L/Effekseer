@@ -612,7 +612,7 @@ public:
 
 	int GetMouseButton(int32_t mouseButton);
 
-	int GetMouseWheel();
+	float GetMouseWheel();
 
 	void SetCallback(GUIManagerCallback* callback);
 

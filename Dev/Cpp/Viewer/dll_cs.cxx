@@ -7202,13 +7202,13 @@ SWIGEXPORT int SWIGSTDCALL CSharp_Effekseerfswig_GUIManager_GetMouseButton___(vo
 }
 
 
-SWIGEXPORT int SWIGSTDCALL CSharp_Effekseerfswig_GUIManager_GetMouseWheel___(void * jarg1) {
-  int jresult ;
+SWIGEXPORT float SWIGSTDCALL CSharp_Effekseerfswig_GUIManager_GetMouseWheel___(void * jarg1) {
+  float jresult ;
   efk::GUIManager *arg1 = 0 ;
-  int result;
+  float result;
   
   arg1 = (efk::GUIManager *)jarg1; 
-  result = (int)(arg1)->GetMouseWheel();
+  result = (float)(arg1)->GetMouseWheel();
   jresult = result; 
   return jresult;
 }
@@ -14633,4 +14633,3 @@ SWIGEXPORT std::shared_ptr< Effekseer::ToolRuntime::Image > * SWIGSTDCALL CSharp
 #ifdef __cplusplus
 }
 #endif
-

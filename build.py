@@ -1,5 +1,7 @@
 import os
 import platform
+import plistlib
+import re
 import shutil
 import subprocess
 import sys
@@ -81,6 +83,26 @@ def copy_tree(src, dst, change=False, ignore=None):
         rmdir(dst)
 
     shutil.copytree(src, dst, dirs_exist_ok=True, ignore=ignore)
+
+
+def get_editor_version():
+    core_cs = Path('Dev/Editor/EffekseerCore/Core.cs')
+    text = core_cs.read_text(encoding='utf-8-sig')
+    match = re.search(r'public const string Version = "([^"]+)"', text)
+    if not match:
+        raise RuntimeError(f'Failed to read editor version from {core_cs}')
+    return match.group(1)
+
+
+def update_mac_bundle_version(plist_path, version):
+    with plist_path.open('rb') as fp:
+        info = plistlib.load(fp)
+
+    info['CFBundleShortVersionString'] = version
+    info['CFBundleVersion'] = version
+
+    with plist_path.open('wb') as fp:
+        plistlib.dump(info, fp, sort_keys=False)
 
 
 class CurrentDir:
@@ -214,6 +236,7 @@ def main():
             run_command('rm -rf -r Dev/release/linux-x64')
 
     if env['PACKAGEING_FOR_MAC'] == '1' and is_mac():
+        editor_version = get_editor_version()
         cd('Dev')
         mkdir('Mac/Effekseer.app/Contents/Resources/')
         copy_tree('release/', 'Mac/Effekseer.app/Contents/Resources/')
@@ -228,6 +251,7 @@ def main():
         os.makedirs('Mac/Package', exist_ok=True)
 
         copy_tree('Mac/Effekseer.app', 'Mac/Package/Effekseer.app')
+        update_mac_bundle_version(Path('Mac/Package/Effekseer.app/Contents/Info.plist'), editor_version)
         link = Path('Applications')
         if link.exists() or link.is_symlink():
             link.unlink()
