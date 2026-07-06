@@ -762,6 +762,19 @@ bool Texture::Init(const Effekseer::Backend::TextureParameter& param, const Effe
 	{
 		GLExt::glGenerateMipmap(target);
 	}
+	else if (hasProvidedMipData)
+	{
+		// The provided mip chain can be shorter than the complete chain.
+		// Limit the mip range, otherwise the texture is incomplete and sampled as black.
+#ifndef GL_TEXTURE_MAX_LEVEL
+#define GL_TEXTURE_MAX_LEVEL 0x813D
+#endif
+		// GL_TEXTURE_MAX_LEVEL is unavailable on OpenGL ES2
+		if (GLExt::GetDeviceType() != OpenGLDeviceType::OpenGLES2)
+		{
+			glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, param.MipLevelCount - 1);
+		}
+	}
 
 	if (graphicsDevice_->GetIsRestorationOfStatesRequired())
 	{
