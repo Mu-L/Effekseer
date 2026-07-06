@@ -678,56 +678,9 @@ std::string GetElement(int32_t i)
 	return "";
 }
 
-bool IsVectorType(const std::string& type)
-{
-	return type == "float2" || type == "float3" || type == "float4";
-}
-
-std::unordered_map<std::string, std::string> CollectVariableTypes(const std::string& code)
-{
-	std::unordered_map<std::string, std::string> variableTypes;
-	const std::regex declarationPattern(R"(\b(float|float2|float3|float4)\s+([A-Za-z_]\w*)\s*=)");
-
-	for (auto it = std::sregex_iterator(code.begin(), code.end(), declarationPattern); it != std::sregex_iterator(); ++it)
-	{
-		variableTypes[(*it)[2].str()] = (*it)[1].str();
-	}
-
-	return variableTypes;
-}
-
 std::string AdaptBoolExpressions(std::string code)
 {
-	const auto variableTypes = CollectVariableTypes(code);
-	const std::regex boolComparePattern(R"(bool\s+([A-Za-z_]\w*)\s*=\s*([A-Za-z_]\w*)\s*(<=|>=|<|>)\s*float\(([^,\(\)]*)\)\s*;)");
-
-	std::string result;
-	size_t last = 0;
-	for (auto it = std::sregex_iterator(code.begin(), code.end(), boolComparePattern); it != std::sregex_iterator(); ++it)
-	{
-		const auto match = *it;
-		const auto variable = match[2].str();
-		const auto variableType = variableTypes.find(variable);
-		if (variableType == variableTypes.end() || !IsVectorType(variableType->second))
-		{
-			continue;
-		}
-
-		result.append(code, last, match.position() - last);
-		result.append("bool ");
-		result.append(match[1].str());
-		result.append("=");
-		result.append(variable);
-		result.append(".x");
-		result.append(match[3].str());
-		result.append("float(");
-		result.append(match[4].str());
-		result.append(");");
-		last = match.position() + match.length();
-	}
-
-	result.append(code, last, std::string::npos);
-	return result;
+	return Effekseer::Shader::AdaptBoolCompareExpressions(code, {"float2", "float3", "float4"});
 }
 
 std::string GetUVReplacement(const std::string& varName, int stage)
