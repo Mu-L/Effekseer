@@ -7,6 +7,7 @@
 
 - Release procedure: [ReleaseGuide.md](./ReleaseGuide.md)
 - Effekseer-specific imgui changes: [ImGuiCustomization.md](./ImGuiCustomization.md)
+- Easing internal implementation: [Implementation/Easing.md](./Implementation/Easing.md)
 
 ## Effekseer
 
