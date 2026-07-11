@@ -227,8 +227,7 @@ public:
 	{
 		auto path = std::u16string(recordingParameter_.GetPath()) + std::u16string(recordingParameter_.GetExt());
 
-		helper.Initialize(path.c_str(), imageSize_.X, imageSize_.Y, recordingParameter_.Freq);
-		return true;
+		return helper.Initialize(path.c_str(), imageSize_.X, imageSize_.Y, recordingParameter_.Freq);
 	}
 
 	void OnEndRecord() override

@@ -1,5 +1,6 @@
 #include "EffectPlatformGLFW.h"
 
+#include <cstdlib>
 #include <iostream>
 
 #include <EffekseerRendererGL/EffekseerRendererGL.GLExtension.h>
@@ -12,6 +13,11 @@ void GLAPIENTRY glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum seve
 	{
 		std::cout.write(message, length);
 		std::cout << std::endl;
+	}
+
+	if (type == GL_DEBUG_TYPE_ERROR)
+	{
+		std::abort();
 	}
 }
 #endif

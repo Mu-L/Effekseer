@@ -123,7 +123,8 @@ def main():
     copy_patterns(Path("ResourceData/samples"), sample_dir, patterns)
 
     print("Readme")
-    shutil.copy("readme_tool_win.txt", rdir / "readme.txt")
+    readme_path = "readme_tool_win.txt" if is_windows else "readme_tool_linux.txt"
+    shutil.copy(readme_path, rdir / "readme.txt")
     shutil.copy("docs/readme_sample.txt", sample_dir / "readme.txt")
     shutil.copy("docs/Help_Ja.html", rdir / "Help_Ja.html")
     shutil.copy("docs/Help_En.html", rdir / "Help_En.html")
@@ -132,4 +133,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

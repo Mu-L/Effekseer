@@ -92,18 +92,36 @@ struct Platform
 
 	~Platform()
 	{
-		CloseHandle(pi.hProcess);
-		CloseHandle(pi.hThread);
+		if (pi.hProcess != nullptr)
+		{
+			CloseHandle(pi.hProcess);
+		}
+		if (pi.hThread != nullptr)
+		{
+			CloseHandle(pi.hThread);
+		}
 	}
 
-	bool Execute(const char* cmd)
+	bool Execute(const std::string& cmd)
 	{
-		return CreateProcess(nullptr, (LPSTR)cmd, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi) == TRUE;
+		std::vector<char> mutableCommand(cmd.begin(), cmd.end());
+		mutableCommand.push_back('\0');
+		return CreateProcessA(nullptr, mutableCommand.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi) == TRUE;
 	}
 
-	void Wait()
+	int Wait()
 	{
-		WaitForSingleObject(pi.hProcess, INFINITE);
+		if (pi.hProcess == nullptr || WaitForSingleObject(pi.hProcess, INFINITE) != WAIT_OBJECT_0)
+		{
+			return 1;
+		}
+
+		DWORD exitCode = 1;
+		if (GetExitCodeProcess(pi.hProcess, &exitCode) == FALSE)
+		{
+			return 1;
+		}
+		return static_cast<int>(exitCode);
 	}
 };
 #else
@@ -138,16 +156,32 @@ struct Platform
 		return true;
 	}
 
-	void Wait()
+	int Wait()
 	{
 		if (pid < 0)
-			return;
+			return 1;
 
 		int status = 0;
-		while (waitpid(pid, &status, 0) < 0 && errno == EINTR)
+		pid_t result = -1;
+		do
 		{
-		}
+			result = waitpid(pid, &status, 0);
+		} while (result < 0 && errno == EINTR);
 		pid = -1;
+
+		if (result < 0)
+		{
+			return 1;
+		}
+		if (WIFEXITED(status))
+		{
+			return WEXITSTATUS(status);
+		}
+		if (WIFSIGNALED(status))
+		{
+			return 128 + WTERMSIG(status);
+		}
+		return 1;
 	}
 };
 #endif
@@ -187,7 +221,7 @@ int mainLoop(int argc, char* argv[])
 
 	Platform platform;
 #ifdef _WIN32
-	if (!platform.Execute(cmd.c_str()))
+	if (!platform.Execute(cmd))
 #else
 	if (!platform.Execute(cmd, arguments))
 #endif
@@ -196,11 +230,16 @@ int mainLoop(int argc, char* argv[])
 		return 1;
 	}
 
-#ifndef _WIN32
-	platform.Wait();
-#endif
-	std::cout << "Finished " << cmd << std::endl;
-	return 0;
+	const auto exitCode = platform.Wait();
+	if (exitCode == 0)
+	{
+		std::cout << "Finished " << cmd << std::endl;
+	}
+	else
+	{
+		std::cerr << cmd << " exited with code " << exitCode << std::endl;
+	}
+	return exitCode;
 }
 
 #if defined(NDEBUG) && defined(_WIN32)

@@ -16,6 +16,7 @@ private:
 	GLuint groundDepthTexture_ = 0;
 	GLuint groundProgram_ = 0;
 	GLuint groundDepthProgram_ = 0;
+	GLuint groundVertexArray_ = 0;
 	GLuint groundVertexBuffer_ = 0;
 	GLuint groundIndexBuffer_ = 0;
 	bool usesGpuGroundDepth_ = false;

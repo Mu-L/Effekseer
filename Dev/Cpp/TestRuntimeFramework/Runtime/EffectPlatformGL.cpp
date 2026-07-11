@@ -140,12 +140,14 @@ bool EffectPlatformGL::CreateGroundResources()
 		return false;
 	}
 
+	GL::glGenVertexArrays(1, &groundVertexArray_);
+	GL::glBindVertexArray(groundVertexArray_);
 	GL::glGenBuffers(1, &groundVertexBuffer_);
 	GL::glGenBuffers(1, &groundIndexBuffer_);
 	const auto indices = CreateGroundPlaneIndices();
 	GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, groundIndexBuffer_);
 	GL::glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices.data(), GL_STATIC_DRAW);
-	GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	GL::glBindVertexArray(0);
 
 	glGenTextures(1, &groundDepthColorTexture_);
 	glBindTexture(GL_TEXTURE_2D, groundDepthColorTexture_);
@@ -178,6 +180,11 @@ bool EffectPlatformGL::CreateGroundResources()
 void EffectPlatformGL::ReleaseGroundResources()
 {
 	groundDepthTextureForEffekseer_.Reset();
+	if (groundVertexArray_ != 0)
+	{
+		GL::glDeleteVertexArrays(1, &groundVertexArray_);
+		groundVertexArray_ = 0;
+	}
 	if (groundIndexBuffer_ != 0)
 	{
 		GL::glDeleteBuffers(1, &groundIndexBuffer_);
@@ -228,6 +235,9 @@ void EffectPlatformGL::UpdateGroundVertexBuffer()
 void EffectPlatformGL::DrawGround(Effekseer::ToolRuntime::GroundRenderPass pass)
 {
 	const auto program = pass == Effekseer::ToolRuntime::GroundRenderPass::Depth ? groundDepthProgram_ : groundProgram_;
+	GLint previousVertexArray = 0;
+	glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &previousVertexArray);
+	GL::glBindVertexArray(groundVertexArray_);
 	GL::glUseProgram(program);
 	GL::glBindBuffer(GL_ARRAY_BUFFER, groundVertexBuffer_);
 	GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, groundIndexBuffer_);
@@ -241,6 +251,7 @@ void EffectPlatformGL::DrawGround(Effekseer::ToolRuntime::GroundRenderPass pass)
 	GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	GL::glBindBuffer(GL_ARRAY_BUFFER, 0);
 	GL::glUseProgram(0);
+	GL::glBindVertexArray(static_cast<GLuint>(previousVertexArray));
 }
 
 void EffectPlatformGL::UpdateBackgroundTexture()
