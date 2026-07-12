@@ -1,5 +1,6 @@
 #include "EffekseerRendererLLGI.GpuParticles.h"
 #include "EffekseerRendererLLGI.Shader.h"
+#include "GraphicsDevice.h"
 
 namespace EffekseerRendererLLGI
 {
@@ -44,9 +45,23 @@ bool GpuParticleSystem::InitSystem(const Settings& settings)
 		return false;
 	}
 
-	SetShaders(shaders);
+	if (!SetShaders(shaders))
+	{
+		return false;
+	}
 
-	return true;
+	auto validatePipeline = [](const Effekseer::Backend::PipelineStateRef& pipeline, LLGI::RenderPassPipelineState* renderPass)
+	{
+		auto llgiPipeline = pipeline.DownCast<Backend::PipelineState>();
+		return llgiPipeline != nullptr && llgiPipeline->GetOrCreatePipelineState(renderPass) != nullptr;
+	};
+
+	EffekseerRenderer::GpuParticles::PipelineStateKey renderKey{};
+	auto renderPipeline = GetOrCreatePipelineState(renderKey);
+	auto renderPass = renderer->GetCurrentRenderPassPipelineState();
+	return validatePipeline(pipelineParticleClear_, nullptr) && validatePipeline(pipelineParticleSpawn_, nullptr) &&
+		   validatePipeline(pipelineParticleUpdate_, nullptr) && renderPass != nullptr &&
+		   validatePipeline(renderPipeline, renderPass.get());
 }
 
 } // namespace EffekseerRendererLLGI
