@@ -8,7 +8,9 @@ EfkEfcFile::EfkEfcFile(const void* data, int32_t size)
 	: data_(data)
 	, size_(size)
 {
-	BinaryReader<true> binaryReader(const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(data_)), size_);
+	if (data == nullptr || size < 0)
+		return;
+	BinaryReader<true> binaryReader(reinterpret_cast<const uint8_t*>(data_), static_cast<size_t>(size_));
 
 	// EFKP
 	int head = 0;
@@ -26,7 +28,7 @@ EfkEfcFile::Chunk EfkEfcFile::ReadChunk(const char* forcc) const
 	if (!IsValid())
 		return {};
 
-	BinaryReader<true> binaryReader(const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(data_)), size_);
+	BinaryReader<true> binaryReader(reinterpret_cast<const uint8_t*>(data_), static_cast<size_t>(size_));
 
 	// Skip forcc and version
 	binaryReader.AddOffset(8);
@@ -35,9 +37,11 @@ EfkEfcFile::Chunk EfkEfcFile::ReadChunk(const char* forcc) const
 	while (binaryReader.GetOffset() < size_)
 	{
 		int chunkForcc = 0;
-		binaryReader.Read(chunkForcc);
+		if (!binaryReader.Read(chunkForcc))
+			return {};
 		int chunkSize = 0;
-		binaryReader.Read(chunkSize);
+		if (!binaryReader.Read(chunkSize) || chunkSize < 0 || !binaryReader.CanRead(static_cast<size_t>(chunkSize)))
+			return {};
 
 		if (memcmp(&chunkForcc, forcc, 4) == 0)
 		{
@@ -47,7 +51,8 @@ EfkEfcFile::Chunk EfkEfcFile::ReadChunk(const char* forcc) const
 			return chunk;
 		}
 
-		binaryReader.AddOffset(chunkSize);
+		if (!binaryReader.Skip(static_cast<size_t>(chunkSize)))
+			return {};
 	}
 
 	return {};
@@ -108,22 +113,26 @@ bool EfkEfcProperty::Load(const void* data, int32_t size)
 		return false;
 	}
 
-	BinaryReader<true> binaryReader(const_cast<uint8_t*>(static_cast<const uint8_t*>(chunk.data)), chunk.size);
+	BinaryReader<true> binaryReader(static_cast<const uint8_t*>(chunk.data), static_cast<size_t>(chunk.size));
 
 	int32_t infoVersion = 0;
 
-	auto loadStr = [this, &binaryReader, &infoVersion](std::vector<std::u16string>& dst)
+	constexpr int32_t elementCountMax = 1024;
+	auto loadStr = [&binaryReader, &infoVersion, elementCountMax](std::vector<std::u16string>& dst) -> bool
 	{
 		int32_t dataCount = 0;
-		binaryReader.Read(dataCount);
+		if (!binaryReader.Read(dataCount))
+			return false;
 
 		// compatibility
 		if (dataCount >= 1500)
 		{
 			infoVersion = dataCount;
-			binaryReader.Read(dataCount);
+			if (!binaryReader.Read(dataCount))
+				return false;
 		}
-
+		if (dataCount < 0 || dataCount > elementCountMax)
+			return false;
 		dst.resize(dataCount);
 
 		std::vector<char16_t> strBuf;
@@ -131,25 +140,28 @@ bool EfkEfcProperty::Load(const void* data, int32_t size)
 		for (int i = 0; i < dataCount; i++)
 		{
 			int length = 0;
-			binaryReader.Read(length);
-			strBuf.resize(length);
-			binaryReader.Read(strBuf.data(), length);
-			dst.at(i) = strBuf.data();
+			if (!binaryReader.Read(length) || length <= 0 || length > 32768 ||
+				!binaryReader.CanReadElements(length, sizeof(char16_t)))
+				return false;
+			strBuf.resize(static_cast<size_t>(length));
+			if (!binaryReader.Read(strBuf.data(), length) || strBuf.back() != u'\0')
+				return false;
+			dst.at(i).assign(strBuf.data(), static_cast<size_t>(length - 1));
 		}
+		return true;
 	};
 
-	loadStr(colorImages_);
-	loadStr(normalImages_);
-	loadStr(distortionImages_);
-	loadStr(models_);
-	loadStr(sounds_);
+	if (!loadStr(colorImages_) || !loadStr(normalImages_) || !loadStr(distortionImages_) ||
+		!loadStr(models_) || !loadStr(sounds_))
+		return false;
 
 	if (infoVersion >= 1500)
 	{
-		loadStr(materials_);
+		if (!loadStr(materials_))
+			return false;
 	}
 
-	return true;
+	return binaryReader.GetStatus() != BinaryReaderStatus::Failed;
 }
 
 const std::vector<std::u16string>& EfkEfcProperty::GetColorImages() const

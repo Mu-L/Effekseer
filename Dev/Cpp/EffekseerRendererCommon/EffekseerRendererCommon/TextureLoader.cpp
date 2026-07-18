@@ -4,6 +4,7 @@
 #include "EffekseerRenderer.DDSTextureLoader.h"
 #include "EffekseerRenderer.PngTextureLoader.h"
 #include "EffekseerRenderer.TGATextureLoader.h"
+#include <limits>
 #endif
 
 namespace EffekseerRenderer
@@ -97,8 +98,11 @@ public:
 			auto isMipEnabled = Effekseer::TextureLoaderHelper::GetIsMipmapEnabled(path16);
 
 			size_t fileSize = reader->GetLength();
+			if (fileSize > static_cast<size_t>(std::numeric_limits<int32_t>::max()))
+				return nullptr;
 			std::vector<uint8_t> fileData(fileSize);
-			reader->Read(fileData.data(), fileSize);
+			if (reader->Read(fileData.data(), fileSize) != fileSize)
+				return nullptr;
 
 			auto texture = Load(fileData.data(), static_cast<int32_t>(fileSize), textureType, isMipEnabled);
 			return texture;
@@ -112,7 +116,7 @@ public:
 		auto size_texture = size;
 		auto data_texture = (uint8_t*)data;
 
-		if (size_texture < 4)
+		if (data_texture == nullptr || size_texture < 4)
 		{
 		}
 		else if (data_texture[1] == 'P' && data_texture[2] == 'N' && data_texture[3] == 'G')

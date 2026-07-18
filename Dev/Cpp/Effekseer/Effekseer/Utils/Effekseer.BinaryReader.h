@@ -176,6 +176,16 @@ public:
 		return true;
 	}
 
+	bool SetOffset(size_t newOffset)
+	{
+		if (IsValidationEnabled && newOffset > size_)
+		{
+			return Fail();
+		}
+		offset = newOffset;
+		return true;
+	}
+
 	void AddOffset(size_t length)
 	{
 		Skip(length);
@@ -184,6 +194,16 @@ public:
 	size_t GetOffset() const
 	{
 		return offset;
+	}
+
+	size_t GetRemainingSize() const
+	{
+		return CanRead(0) ? size_ - offset : 0;
+	}
+
+	const uint8_t* GetCurrentData() const
+	{
+		return CanRead(0) && data_ != nullptr ? data_ + offset : nullptr;
 	}
 };
 

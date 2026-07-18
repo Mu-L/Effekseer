@@ -5,6 +5,7 @@
 #include <string>
 
 #include "Effekseer/Material/Effekseer.CompiledMaterial.h"
+#include <limits>
 
 #undef min
 
@@ -71,9 +72,12 @@ MaterialLoader ::~MaterialLoader()
 		if (reader != nullptr)
 		{
 			size_t size = reader->GetLength();
+			if (size > static_cast<size_t>(std::numeric_limits<int32_t>::max()))
+				return nullptr;
 			std::vector<char> data;
 			data.resize(size);
-			reader->Read(data.data(), size);
+			if (reader->Read(data.data(), size) != size)
+				return nullptr;
 
 			auto material = Load(data.data(), (int32_t)size, ::Effekseer::MaterialFileType::Compiled);
 
@@ -92,9 +96,12 @@ MaterialLoader ::~MaterialLoader()
 		if (reader != nullptr)
 		{
 			size_t size = reader->GetLength();
+			if (size > static_cast<size_t>(std::numeric_limits<int32_t>::max()))
+				return nullptr;
 			std::vector<char> data;
 			data.resize(size);
-			reader->Read(data.data(), size);
+			if (reader->Read(data.data(), size) != size)
+				return nullptr;
 
 			auto material = Load(data.data(), (int32_t)size, ::Effekseer::MaterialFileType::Code);
 

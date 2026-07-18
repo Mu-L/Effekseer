@@ -1,13 +1,14 @@
 ﻿#ifndef __DISABLED_DEFAULT_TEXTURE_LOADER__
 #include "EffekseerRenderer.PngTextureLoader.h"
 #include <chrono>
+#include <limits>
 
 #ifdef __EFFEKSEER_USE_LIBPNG__
 #include <png.h>
 #else
 #define STB_IMAGE_EFFEKSEER_IMPLEMENTATION
 // stb's x86 SIMD path requires SSE2; disable it only for 32-bit x86 targets without SSE2.
-#if !defined(STBI_NO_SIMD) && \
+#if !defined(STBI_NO_SIMD) &&                                          \
 	((defined(_M_IX86) && (!defined(_M_IX86_FP) || _M_IX86_FP < 2)) || \
 	 ((defined(__i386) || defined(__i386__)) && !defined(__SSE2__)))
 #define STBI_NO_SIMD
@@ -19,28 +20,48 @@
 namespace EffekseerRenderer
 {
 #ifdef __EFFEKSEER_USE_LIBPNG__
+struct PngReadContext
+{
+	const uint8_t* current = nullptr;
+	const uint8_t* end = nullptr;
+};
+
 static void PngReadData(png_structp png_ptr, png_bytep data, png_size_t length)
 {
-	uint8_t** d = (uint8_t**)png_get_io_ptr(png_ptr);
-	memcpy(data, *d, length);
-	(*d) += length;
+	auto context = static_cast<PngReadContext*>(png_get_io_ptr(png_ptr));
+	if (context == nullptr || length > static_cast<size_t>(context->end - context->current))
+	{
+		png_error(png_ptr, "Unexpected end of PNG data");
+		return;
+	}
+	memcpy(data, context->current, length);
+	context->current += length;
 }
 #endif
 
 bool PngTextureLoader::Load(const void* data, int32_t size, bool rev)
 {
+	if (data == nullptr || size <= 0)
+		return false;
 #ifdef __EFFEKSEER_USE_LIBPNG__
 	textureWidth = 0;
 	textureHeight = 0;
 	textureData.clear();
 
-	uint8_t* data_ = (uint8_t*)data;
+	PngReadContext readContext{static_cast<const uint8_t*>(data), static_cast<const uint8_t*>(data) + size};
 
 	png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
 
-	png_set_read_fn(png, &data_, &PngReadData);
+	if (png == nullptr)
+		return false;
+	png_set_read_fn(png, &readContext, &PngReadData);
 
 	png_infop png_info = png_create_info_struct(png);
+	if (png_info == nullptr)
+	{
+		png_destroy_read_struct(&png, nullptr, nullptr);
+		return false;
+	}
 
 	if (setjmp(png_jmpbuf(png)))
 	{
@@ -105,9 +126,16 @@ bool PngTextureLoader::Load(const void* data, int32_t size, bool rev)
 
 	textureWidth = png_get_image_width(png, png_info);
 	textureHeight = png_get_image_height(png, png_info);
+	const size_t pixelCount = static_cast<size_t>(textureWidth) * static_cast<size_t>(textureHeight);
+	if (textureWidth <= 0 || textureHeight <= 0 || pixelCount > std::numeric_limits<size_t>::max() / 4 ||
+		pixelCount > std::numeric_limits<size_t>::max() / pixelBytes)
+	{
+		png_destroy_read_struct(&png, &png_info, nullptr);
+		return false;
+	}
 
-	uint8_t* image = new uint8_t[textureWidth * textureHeight * pixelBytes];
-	uint32_t pitch = textureWidth * pixelBytes;
+	uint8_t* image = new uint8_t[pixelCount * pixelBytes];
+	size_t pitch = static_cast<size_t>(textureWidth) * pixelBytes;
 
 	for (int pass = 0; pass < passes; pass++)
 	{
@@ -127,12 +155,12 @@ bool PngTextureLoader::Load(const void* data, int32_t size, bool rev)
 		}
 	}
 
-	textureData.resize(textureWidth * textureHeight * 4);
+	textureData.resize(pixelCount * 4);
 	auto imagedst_ = textureData.data();
 
 	if (pixelBytes == 4)
 	{
-		memcpy(imagedst_, image, textureWidth * textureHeight * 4);
+		memcpy(imagedst_, image, pixelCount * 4);
 	}
 	else if (pixelBytes == 1)
 	{
@@ -140,8 +168,9 @@ bool PngTextureLoader::Load(const void* data, int32_t size, bool rev)
 		{
 			for (int32_t x = 0; x < textureWidth; x++)
 			{
-				auto src = (x + y * textureWidth) * 1;
-				auto dst = (x + y * textureWidth) * 4;
+				const auto pixelIndex = static_cast<size_t>(x) + static_cast<size_t>(y) * textureWidth;
+				auto src = pixelIndex;
+				auto dst = pixelIndex * 4;
 				imagedst_[dst + 0] = image[src + 0];
 				imagedst_[dst + 1] = image[src + 0];
 				imagedst_[dst + 2] = image[src + 0];
@@ -155,8 +184,9 @@ bool PngTextureLoader::Load(const void* data, int32_t size, bool rev)
 		{
 			for (int32_t x = 0; x < textureWidth; x++)
 			{
-				auto src = (x + y * textureWidth) * 3;
-				auto dst = (x + y * textureWidth) * 4;
+				const auto pixelIndex = static_cast<size_t>(x) + static_cast<size_t>(y) * textureWidth;
+				auto src = pixelIndex * 3;
+				auto dst = pixelIndex * 4;
 				imagedst_[dst + 0] = image[src + 0];
 				imagedst_[dst + 1] = image[src + 1];
 				imagedst_[dst + 2] = image[src + 2];
@@ -181,16 +211,19 @@ bool PngTextureLoader::Load(const void* data, int32_t size, bool rev)
 
 	pixels = (uint8_t*)Effekseer::stbi_load_from_memory((Effekseer::stbi_uc const*)data, size, &width, &height, &bpp, 0);
 
-	if (width > 0)
+	if (pixels != nullptr && width > 0 && height > 0 &&
+		static_cast<size_t>(width) <= std::numeric_limits<size_t>::max() / static_cast<size_t>(height) &&
+		static_cast<size_t>(width) * static_cast<size_t>(height) <= std::numeric_limits<size_t>::max() / 4)
 	{
-		textureData.resize(width * height * 4);
+		const size_t pixelCount = static_cast<size_t>(width) * static_cast<size_t>(height);
+		textureData.resize(pixelCount * 4);
 		textureWidth = width;
 		textureHeight = height;
 		auto buf = textureData.data();
 
 		if (bpp == 4)
 		{
-			memcpy(textureData.data(), pixels, width * height * 4);
+			memcpy(textureData.data(), pixels, pixelCount * 4);
 		}
 		else if (bpp == 2)
 		{
@@ -199,10 +232,11 @@ bool PngTextureLoader::Load(const void* data, int32_t size, bool rev)
 			{
 				for (int w = 0; w < width; w++)
 				{
-					((uint8_t*)buf)[(w + h * width) * 4 + 0] = pixels[(w + h * width) * 2 + 0];
-					((uint8_t*)buf)[(w + h * width) * 4 + 1] = pixels[(w + h * width) * 2 + 0];
-					((uint8_t*)buf)[(w + h * width) * 4 + 2] = pixels[(w + h * width) * 2 + 0];
-					((uint8_t*)buf)[(w + h * width) * 4 + 3] = pixels[(w + h * width) * 2 + 1];
+					const size_t index = static_cast<size_t>(w) + static_cast<size_t>(h) * width;
+					((uint8_t*)buf)[index * 4 + 0] = pixels[index * 2 + 0];
+					((uint8_t*)buf)[index * 4 + 1] = pixels[index * 2 + 0];
+					((uint8_t*)buf)[index * 4 + 2] = pixels[index * 2 + 0];
+					((uint8_t*)buf)[index * 4 + 3] = pixels[index * 2 + 1];
 				}
 			}
 		}
@@ -213,10 +247,11 @@ bool PngTextureLoader::Load(const void* data, int32_t size, bool rev)
 			{
 				for (int w = 0; w < width; w++)
 				{
-					((uint8_t*)buf)[(w + h * width) * 4 + 0] = pixels[(w + h * width) * 1 + 0];
-					((uint8_t*)buf)[(w + h * width) * 4 + 1] = pixels[(w + h * width) * 1 + 0];
-					((uint8_t*)buf)[(w + h * width) * 4 + 2] = pixels[(w + h * width) * 1 + 0];
-					((uint8_t*)buf)[(w + h * width) * 4 + 3] = 255;
+					const size_t index = static_cast<size_t>(w) + static_cast<size_t>(h) * width;
+					((uint8_t*)buf)[index * 4 + 0] = pixels[index];
+					((uint8_t*)buf)[index * 4 + 1] = pixels[index];
+					((uint8_t*)buf)[index * 4 + 2] = pixels[index];
+					((uint8_t*)buf)[index * 4 + 3] = 255;
 				}
 			}
 		}
@@ -226,10 +261,11 @@ bool PngTextureLoader::Load(const void* data, int32_t size, bool rev)
 			{
 				for (int w = 0; w < width; w++)
 				{
-					((uint8_t*)buf)[(w + h * width) * 4 + 0] = pixels[(w + h * width) * 3 + 0];
-					((uint8_t*)buf)[(w + h * width) * 4 + 1] = pixels[(w + h * width) * 3 + 1];
-					((uint8_t*)buf)[(w + h * width) * 4 + 2] = pixels[(w + h * width) * 3 + 2];
-					((uint8_t*)buf)[(w + h * width) * 4 + 3] = 255;
+					const size_t index = static_cast<size_t>(w) + static_cast<size_t>(h) * width;
+					((uint8_t*)buf)[index * 4 + 0] = pixels[index * 3 + 0];
+					((uint8_t*)buf)[index * 4 + 1] = pixels[index * 3 + 1];
+					((uint8_t*)buf)[index * 4 + 2] = pixels[index * 3 + 2];
+					((uint8_t*)buf)[index * 4 + 3] = 255;
 				}
 			}
 		}
