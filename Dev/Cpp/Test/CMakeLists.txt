@@ -20,6 +20,7 @@ else()
       TestHelper.cpp
       Runtime/BasicRendering.h
       Runtime/BasicRendering.cpp
+      Runtime/Curve.cpp
       Runtime/FCurves.cpp
       Runtime/RuntimeTest.cpp
       Runtime/Performance.cpp
@@ -31,6 +32,7 @@ else()
       Runtime/Network.cpp
       Runtime/Math.cpp
       Runtime/Misc.cpp
+      Runtime/Model.cpp
       Runtime/VectorField.cpp
       Backend/Helper.h
       Backend/Helper.cpp
