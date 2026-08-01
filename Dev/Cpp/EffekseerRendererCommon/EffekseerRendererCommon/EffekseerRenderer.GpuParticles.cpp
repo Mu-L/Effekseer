@@ -328,7 +328,7 @@ bool GpuParticleSystem::InitSystem(const Settings& settings)
 
 	for (const auto& emitter : emitters_)
 	{
-		if (!emitter.Buffer)
+		if (!emitter.Buffer || !emitter.RenderConstantsBuffer)
 		{
 			return false;
 		}
