@@ -119,8 +119,51 @@ void TestValidEffect()
 	}
 }
 
+void TestEfkEfcProperty()
+{
+	const auto basePath = GetDirectoryPathAsU16(__FILE__) + u"../../../../TestData/Effects/";
+
+	// info version 1500: string arrays without curves
+	{
+		auto data = LoadFile((basePath + u"15/Update_Easing.efkefc").c_str());
+		Effekseer::EfkEfcProperty property;
+		EXPECT_TRUE(!data.empty());
+		EXPECT_TRUE(property.Load(data.data(), static_cast<int32_t>(data.size())));
+		EXPECT_TRUE(property.GetColorImages().empty() && property.GetModels().empty());
+	}
+
+	// info version 1610: string arrays with curves
+	{
+		auto data = LoadFile((basePath + u"16/ForceFieldLocal03.efkefc").c_str());
+		Effekseer::EfkEfcProperty property;
+		EXPECT_TRUE(!data.empty());
+		EXPECT_TRUE(property.Load(data.data(), static_cast<int32_t>(data.size())));
+		EXPECT_TRUE(property.GetColorImages() == std::vector<std::u16string>{u"../Textures/Particle03.png"});
+	}
+
+	// info version 1700 and later: dependency list
+	{
+		auto data = LoadFile((basePath + u"18/GpuParticles_emit_mesh.efkefc").c_str());
+		Effekseer::EfkEfcProperty property;
+		EXPECT_TRUE(!data.empty());
+		EXPECT_TRUE(property.Load(data.data(), static_cast<int32_t>(data.size())));
+		EXPECT_TRUE(property.GetColorImages() == std::vector<std::u16string>{u"../Textures/Particle01.png"});
+		EXPECT_TRUE(property.GetModels() == std::vector<std::u16string>{u"../Models/Sphare_Resized.efkmodel"});
+	}
+
+	{
+		auto data = LoadFile((basePath + u"18/Materials1.efkefc").c_str());
+		Effekseer::EfkEfcProperty property;
+		EXPECT_TRUE(!data.empty());
+		EXPECT_TRUE(property.Load(data.data(), static_cast<int32_t>(data.size())));
+		EXPECT_TRUE(property.GetMaterials().size() == 5 && property.GetModels().size() == 1);
+	}
+}
+
 TestRegister Runtime_BinaryLoading_EfkEfc("Runtime.BinaryLoading.EfkEfc", []()
 										  { TestEfkEfcChunkBounds(); });
+TestRegister Runtime_BinaryLoading_EfkEfcProperty("Runtime.BinaryLoading.EfkEfcProperty", []()
+												  { TestEfkEfcProperty(); });
 TestRegister Runtime_BinaryLoading_Gradient("Runtime.BinaryLoading.Gradient", []()
 											{ TestGradientBounds(); });
 TestRegister Runtime_BinaryLoading_Other("Runtime.BinaryLoading.Other", []()

@@ -278,6 +278,9 @@ public:
 	/**
 		@brief Selects legacy simulation conversion or boundary conversion.
 		@note Set this before loading effects. ExternalConversion keeps effect loading and simulation in RH space.
+		To do so it forces the CoordinateSystem of the attached Setting to RH (switching back to LegacySimulation restores
+		the previous coordinate system). Because a Setting can be shared, do not share one Setting between managers
+		that use different CoordinateSystemModes or coordinate systems.
 	*/
 	virtual void SetCoordinateSystemMode(CoordinateSystemMode mode) = 0;
 

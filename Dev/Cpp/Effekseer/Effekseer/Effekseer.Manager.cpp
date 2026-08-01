@@ -713,7 +713,13 @@ void ManagerImplemented::RefreshCoordinateSystemBoundaryState()
 {
 	if (coordinateSystemMode_ == CoordinateSystemMode::ExternalConversion)
 	{
-		setting_->SetCoordinateSystem(CoordinateSystem::RH);
+		if (setting_->GetCoordinateSystem() != CoordinateSystem::RH)
+		{
+			Log(LogType::Warning,
+				"CoordinateSystemMode::ExternalConversion forces the attached Setting's CoordinateSystem to RH. "
+				"Any other manager or effect loading that shares this Setting is affected as well.");
+			setting_->SetCoordinateSystem(CoordinateSystem::RH);
+		}
 	}
 	else
 	{
