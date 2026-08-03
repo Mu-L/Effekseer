@@ -10,6 +10,8 @@
 namespace Effekseer
 {
 
+const int Gradient::KeyMax;
+
 void LoadGradient(Gradient& gradient, uint8_t*& pos, int32_t version)
 {
 	BinaryReader<true> reader(pos, std::numeric_limits<int>::max());

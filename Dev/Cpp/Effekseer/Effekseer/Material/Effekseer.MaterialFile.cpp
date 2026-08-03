@@ -5,6 +5,9 @@
 namespace Effekseer
 {
 
+const int32_t MaterialFile::LatestSupportVersion;
+const int32_t MaterialFile::OldestSupportVersion;
+
 bool MaterialFile::Load(const uint8_t* data, int32_t size)
 {
 	if (data == nullptr || size < 0)
