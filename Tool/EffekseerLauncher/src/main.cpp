@@ -106,7 +106,8 @@ struct Platform
 	{
 		std::vector<char> mutableCommand(cmd.begin(), cmd.end());
 		mutableCommand.push_back('\0');
-		return CreateProcessA(nullptr, mutableCommand.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi) == TRUE;
+		const std::string application = ".\\bin\\Effekseer.exe";
+		return CreateProcessA(application.c_str(), mutableCommand.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi) == TRUE;
 	}
 
 	int Wait()
