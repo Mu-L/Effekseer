@@ -29,6 +29,7 @@ set(effekseer_public_h
     Effekseer/Backend/Effekseer.GraphicsDevice.h
     Effekseer/Network/Effekseer.Server.h
     Effekseer/Network/Effekseer.Client.h
+    Effekseer/Utils/Effekseer.BinaryReader.h
     Effekseer/Utils/Effekseer.CustomAllocator.h
     Effekseer/Utils/Effekseer.String.h
     Effekseer/IO/Effekseer.EfkEfcFactory.h
